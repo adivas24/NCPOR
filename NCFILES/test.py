@@ -10,10 +10,14 @@ nc_array = []
 for i in range(num_files):
 	nc_array.append(Dataset(sys.argv[i+1], 'r'))
 
+#print nc_array[0].variables['u10'].dimensions
 dim_no = 0
 dim_set = [x for x in nc_array[0].dimensions.keys() if x != u'time' and x != u'Time']
 dime_info = dict()
 time_range = []
+time_unit = nc_array[0].variables['time'].units.split()
+if (time_unit[0] == "hours" and time_unit[1] == "since"):
+	year_base = int(time_unit[2].split('-')[0])
 
 for a in dim_set:
 	array = [None, None, None]
@@ -25,8 +29,8 @@ for a in dim_set:
 
 for x in nc_array:
 	time_range = np.append(time_range, x.variables['time'][:])
-year_min = int(np.amin(time_range)//(24*365))+1900
-year_max = int(np.amax(time_range)//(24*365))+1900
+year_min = int((np.amin(time_range)//(24*365)))+year_base - int(np.amin(time_range)//(24*365*365*4))
+year_max = int((np.amax(time_range)//(24*365)))+year_base - int(np.amin(time_range)//(24*365*365*4))
 
 
 vars_array =[x for x in nc_array[0].variables.keys() if x not in dim_set and x != u'time' and x!= u'Time']
@@ -72,8 +76,10 @@ def getData(msg1, msg2):
 		for x in dim_set:
 			message1 = message1 + x + ': ' + str(dime_info[x][0][index_vars[x]])+'\n'
 		message1 = message1 + 'time: ' + year
+
 		for y in vars_array:
-			message2 = message2 + y +': ' + str(var_data_array[y][index_vars['time'], index_vars['latitude'], index_vars['longitude']]) +'\n'
+			ind_array = tuple([np.array(index_vars[a]) for a in nc_array[0].variables[y].dimensions])
+			message2 = message2 + y +': ' + str(var_data_array[y][ind_array]) +'\n'
 
 	else:
 		x = 0
@@ -99,7 +105,9 @@ def getData(msg1, msg2):
 			message1 = message1 + x +': ' +str(dime_info[x][0][index_vars[x][0]]) + ':' + str(dime_info[x][0][index_vars[x][1]])+ '\n'
 		message1 = message1 + 'time: ' + year1 +':' + year2
 		for y in vars_array:
-			message2 = message2 + y+ ': ' + str(var_data_array[y][index_vars['time'][0]:index_vars['time'][1],index_vars['latitude'][1]:index_vars['latitude'][0],index_vars['longitude'][0]:index_vars['longitude'][1],]) + '\n'
+			ind_array =tuple([slice(min(index_vars[a][0],index_vars[a][1]),max(index_vars[a][0],index_vars[a][1])+1) for a in nc_array[0].variables[y].dimensions])
+			print ind_array
+			message2 = message2 + y+ ': ' + str(var_data_array[y][ind_array]) + '\n'
 
 	msg1.delete(1.0,tk.END)
 	msg2.delete(1.0,tk.END)
