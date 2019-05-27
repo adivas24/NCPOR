@@ -1,0 +1,5 @@
+1. Upload on GitHub and then clean the comments.
+1. The getData function is not complete yet.
+2. Data values are incorrect. Look into intermediate variables and fix bugs.
+3. Consider loading only the required files, instead of all files, might be more useful.
+4. Look into how shapes can be used to mask and select data.
