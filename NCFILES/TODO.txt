@@ -1,5 +1,5 @@
+***CONVERT TO XARRAY***
 
-1. Modularity of code. Modify the time. Use the given function for it. Clean up.
-2. Data values are incorrect. Look into intermediate variables and fix bugs.
+1. Modularity of code. Clean up.
 3. Consider loading only the required files, instead of all files, might be more useful.
 4. Look into how shapes can be used to mask and select data.
