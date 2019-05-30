@@ -2,7 +2,7 @@ import numpy as np
 import numpy.ma as ma
 from netCDF4 import Dataset
 import sys
-import Tkinter as tk
+import tkinter as tk
 import math
 from datetime import datetime, timedelta
 from netCDF4 import num2date, date2num
