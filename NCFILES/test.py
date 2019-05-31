@@ -8,6 +8,12 @@ from datetime import datetime, timedelta
 from netCDF4 import num2date, date2num
 import pandas as pd
 
+#from tkinter.filedialog import askopenfilenames
+#filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
+
+# You can replace the sys.argv[i+1] with filenames[i] if you want a GUI file selector instead of command-line input.
+# However, at this point, all files are being loaded into one huge dataset. This needs to be changed.
+
 num_files = len(sys.argv)-1
 nc_array = []
 for i in range(num_files):
