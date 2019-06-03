@@ -2,5 +2,9 @@
 
 1. Modularity of code. Clean up.
 2. Add a button to select output variables. Add a map selector.
-3. Consider loading only the required files, instead of all files, might be more useful.
+3. Implement loading only selected files. Give user ability to make groups. This can be done by implementing modularity.
 4. Look into how shapes can be used to mask and select data.
+
+1. Convert ASCII file group to a more modular model.
+2. Add functionality to make it print all lines properly. Add the mean and std dev options.
+3. Exprt to CSV

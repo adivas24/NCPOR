@@ -31,7 +31,7 @@ def add_shape_coord_from_data_array(xr_da, shp_path, coord_name):
 
 	shp_gpd = gpd.read_file("world.shp")
 	shapes = [(shape, n) for n, shape in enumerate(shp_gpd.geometry)]
-	xr_da[coord_name] = rasterize(shapes[0:50], xr_da.coords, longitude='longitude', latitude='latitude')
+	xr_da[coord_name] = rasterize([shapes[135]], xr_da.coords, longitude='longitude', latitude='latitude')
 	return xr_da
 
 pc = ccrs.PlateCarree()

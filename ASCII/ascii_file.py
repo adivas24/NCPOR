@@ -56,8 +56,10 @@ for obj in data[1:]:
 			curr_arr_data[i] = curr_arr_data[i]+obj[1:][i]
 	else:
 		#print(curr_array)
+		avg_arr = [i/len(curr_array) for i in curr_arr_data]
 		#print(curr_arr_data)
 		#print('\n\n\n')
+		print(avg_arr)
 		curr_arr_data = obj[1:]
 		curr_time = curr_time+time_interval
 		curr_array = [obj[1:]]

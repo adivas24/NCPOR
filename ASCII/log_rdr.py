@@ -2,6 +2,7 @@ import sys
 import re
 from datetime import datetime
 from datetime import timedelta
+import numpy as np
 
 def num_conv(number):
 	try:
@@ -27,9 +28,8 @@ for obj in data:
 	obj[0] =  datetime.strptime(obj[0],date_time_format)
 	for i in range(1,len(obj)):
 		obj[i] = num_conv(obj[i].strip())
-time_interval = timedelta(minutes=2)
-curr_time = data[0][0]
-
+time_interval = timedelta(minutes=20)
+curr_time = datetime.combine(datetime.date(data[0][0]),datetime.min.time())
 curr_array = [data[0]]
 curr_arr_data = data[0][1:]
 no_of_data = len(curr_arr_data)
@@ -44,14 +44,23 @@ for obj in data[1:]:
 			del curr_array[-1]
 	else:
 		#print(obj[0], curr_time+time_interval, obj[0]<curr_time+time_interval)
-		print(curr_time+time_interval)
-		while(obj[0]>=curr_time+time_interval):
-			curr_time = curr_time+time_interval
-		curr_arr_data = obj[1:]
-		print(curr_array)
-		print(curr_arr_data)
-		print('\n\n\n')
-		curr_array = [obj]
+		#print(curr_time+time_interval)
+		curr_time = curr_time+time_interval
+		if (obj[0]<curr_time+time_interval):
+			curr_arr_data = obj[1:]
+			curr_array = [obj]
+		else:
+			if (curr_arr_data[0] != np.nan):
+				avg_arr = [i/len(curr_array) for i in curr_arr_data]
+			else:
+				avg_arr = curr_array_data
+			curr_array_data = [np.nan for x in range(no_of_data)]
+			curr_array = []
+		print(curr_time)
+		print(avg_arr)
+		#print(curr_array)
+		#print(curr_arr_data)
+		#print('\n\n\n')
 
-print(curr_array)
-print(curr_arr_data)
+#print(curr_array)
+#print(curr_arr_data)
