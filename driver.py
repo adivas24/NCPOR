@@ -10,18 +10,19 @@ filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
 #Add function here to make multisets.
 # Multiset <- 
 
-xr_dataSetArr = ffunc.openNETCDF(filenames)
+config.data = ffunc.openNETCDF(filenames)
+config.root = tk.Tk()
 
-root = tk.Tk()
+config.root.title('NetCDF file reader')
 
-root.title('NetCDF file reader')
+config.nb = ttk.Notebook(config.root)
 
-nb = ttk.Notebook(root)
-
-config.pages = gfunc.addPages(filenames, nb)
-(config.chk_var_list,config.spn_box_list) = gfunc.fillPages(config.pages, xr_dataSetArr)
-for i in config.chk_var_list:
+gfunc.addPages(filenames)
+gfunc.fillPages()
+for i in config.chk_var_list1:
 	for j in i:
 		j.trace("w", gfunc.trig)
-root.mainloop()
+
+
+config.root.mainloop()
 
