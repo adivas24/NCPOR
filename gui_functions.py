@@ -47,7 +47,7 @@ def fillPages():
 		for k in variable_list:
 			createCheckBox(k, i, n1+1, n2)
 			n2 += 1
-		config.OpBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
+		config.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
 	tk.Button(config.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 0)
 	tk.Button(config.root, text = 'Close', command = config.root.destroy).grid(row = 100, column = 1)
 
@@ -91,5 +91,11 @@ def retrieveData():
 		if(rangeVar[x]):
 			config.messages[x][1] = config.spn_box_list[i][x*2+1].get()
 	config.outVar = [a.get() for a in config.chk_var_list2[i]]
-	ffunc.getData(i)
-	
+	sel_message, output_message = ffunc.getData(i)
+	printMessages(output_message,sel_message, i)
+
+def printMessages(o_message, s_message, ind):
+	config.selBox[ind].delete(1.0,tk.END)
+	config.selBox[ind].insert(tk.INSERT, s_message)
+	config.opBox[ind].delete(1.0,tk.END)
+	config.opBox[ind].insert(tk.INSERT, o_message)

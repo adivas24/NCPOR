@@ -5,13 +5,13 @@ import gui_functions as gfunc
 import file_functions as ffunc
 import config
 
+config.root = tk.Tk()
 filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
 
 #Add function here to make multisets.
 # Multiset <- 
 
 config.data = ffunc.openNETCDF(filenames)
-config.root = tk.Tk()
 
 config.root.title('NetCDF file reader')
 
