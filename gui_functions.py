@@ -1,10 +1,16 @@
 
 import tkinter as tk
 from tkinter import ttk
+from tkinter.filedialog import askopenfilename
+import numpy as np
+import pandas as pd
+import geopandas as gpd
 import xarray as xr
 import config
+import fiona
 import file_functions as ffunc
-#from driver import root
+import plot_functions as pfunc
+from datetime import datetime
 
 def addPages(filenames):
 	config.pages = [ttk.Frame(config.nb) for i in range(len(filenames))]
@@ -49,7 +55,8 @@ def fillPages():
 			n2 += 1
 		config.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
 	tk.Button(config.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 0)
-	tk.Button(config.root, text = 'Close', command = config.root.destroy).grid(row = 100, column = 1)
+	tk.Button(config.root, text = 'Plot', command = openPlotWindow).grid(row = 100, column = 1)
+	tk.Button(config.root, text = 'Close', command = config.root.destroy).grid(row = 100, column = 2)
 
 
 def createSelRow(name, num, ind):
@@ -99,3 +106,44 @@ def printMessages(o_message, s_message, ind):
 	config.selBox[ind].insert(tk.INSERT, s_message)
 	config.opBox[ind].delete(1.0,tk.END)
 	config.opBox[ind].insert(tk.INSERT, o_message)
+
+def openPlotWindow():
+	i = config.nb.index("current")
+	var_list = list(config.data[i].data_vars.keys())
+	time_range = [str(pd.to_datetime(a).date()) for a in list(config.data[i].variables['time'].values)]
+	window = tk.Toplevel(config.root)
+	tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
+	var = tk.StringVar(window)
+	var.set(var_list[0])
+	tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
+	tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
+	spin = tk.Spinbox(window, values = time_range)
+	spin.grid(row = 2, column = 1)
+	var2 = tk.IntVar(window)
+	tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 3, column = 0)
+	filename = ""
+	var3 = tk.StringVar(window)
+	shp_ind = -1
+	places = []
+	def shapeSelect(event, b, c):
+		if (var2.get() == 1):
+			nonlocal places, filename
+			filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
+			tk.Label(window, text=filename).grid(row = 3, column = 1)
+			shp = gpd.read_file(filename)
+			places = list(shp['NAME'])
+			places2 = [i for i in places if i is not None]
+			places2.append("ALL")
+			places2.sort()
+			ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 4, column = 1)
+	def plotMapFull():
+		if (var2.get() == 0):
+			pfunc.plotMapFull(i,var.get(), time_range.index(spin.get()))
+		else:
+			if(var3.get() == "ALL"):
+				plac_ind = None
+			else:
+				plac_ind = places.index(var3.get())
+			pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
+	var2.trace("w", shapeSelect)
+	tk.Button(window, text = 'Confirm', command = plotMapFull).grid(row = 10, column = 1)

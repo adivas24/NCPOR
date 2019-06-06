@@ -3,6 +3,7 @@ from tkinter.filedialog import askopenfilenames
 from tkinter import ttk
 import gui_functions as gfunc
 import file_functions as ffunc
+import plot_functions as pfunc
 import config
 
 config.root = tk.Tk()
@@ -22,7 +23,7 @@ gfunc.fillPages()
 for i in config.chk_var_list1:
 	for j in i:
 		j.trace("w", gfunc.trig)
-
+#pfunc.plotMapFull(1, 'air', 1)
 
 config.root.mainloop()
 
