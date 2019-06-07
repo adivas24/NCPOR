@@ -56,7 +56,8 @@ def fillPages():
 		config.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
 	tk.Button(config.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 0)
 	tk.Button(config.root, text = 'Plot', command = openPlotWindow).grid(row = 100, column = 1)
-	tk.Button(config.root, text = 'Close', command = config.root.destroy).grid(row = 100, column = 2)
+	tk.Button(config.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 2)
+	tk.Button(config.root, text = 'Close', command = config.root.destroy).grid(row = 100, column = 3)
 
 
 def createSelRow(name, num, ind):
@@ -147,3 +148,21 @@ def openPlotWindow():
 			pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
 	var2.trace("w", shapeSelect)
 	tk.Button(window, text = 'Confirm', command = plotMapFull).grid(row = 10, column = 1)
+
+def exportToCSV():
+	i = config.nb.index("current")
+	var_list = list(config.data[i].data_vars.keys())
+	window = tk.Toplevel(config.root)
+	tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
+	var = tk.StringVar(window)
+	var.set(var_list[0])
+	tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
+	def saveCSV():
+		a,b = ffunc.getData2(i, var.get())
+		tk.Label(window, text = a).grid(row = 2, column = 0, columnspan = 2)
+		c=np.resize(b,[b.shape[0],b.shape[1]*b.shape[2]])
+		pd.DataFrame(c).to_csv(var.get() + ".csv", header = None, index = None)
+		tk.Label(window, text = "Done").grid(row = 3, column = 1, columnspan = 2)
+
+	tk.Button(window, text = 'Save', command = saveCSV).grid(row = 10, column = 1)
+	
