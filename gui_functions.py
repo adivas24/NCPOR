@@ -34,7 +34,6 @@ def fillPages():
 	config.chk_var_list1 = [None for x in range(no_of_pages)]
 	config.chk_var_list2 = [None for x in range(no_of_pages)]
 	config.spn_box_list = [None for x in range(no_of_pages)]
-	config.chk_box_list = [None for x in range(no_of_pages)]
 	for i in range(no_of_pages):
 		dimension_list = list(xr_dataSet[i].coords.keys())
 		variable_list = list(xr_dataSet[i].data_vars.keys())
