@@ -1,28 +1,30 @@
 import tkinter as tk
-from tkinter.filedialog import askopenfilenames
 from tkinter import ttk
-import gui_functions as gfunc
-import file_functions as ffunc
-import plot_functions as pfunc
-import config
+from tkinter.filedialog import askopenfilenames
 
-config.root = tk.Tk()
+import file_functions as ffunc
+import gui_functions as gfunc
+import plot_functions as pfunc
+import gl_vars
+
+gl_vars.root = tk.Tk()
 filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
 
 #Add function here to make multisets.
 # Multiset <- 
 
-config.data = ffunc.openNETCDF(filenames)
+gl_vars.data = ffunc.openNETCDF(filenames)
 
-config.root.title('NetCDF file reader')
+gl_vars.root.title('NetCDF file reader')
 
-config.nb = ttk.Notebook(config.root)
+gl_vars.nb = ttk.Notebook(gl_vars.root)
 
-gfunc.addPages(filenames)
+file_names = [a.split('/')[-1] for a in filenames]
+gfunc.addPages(file_names)
 gfunc.fillPages()
-for i in config.chk_var_list1:
+for i in gl_vars.chk_var_list1:
 	for j in i:
 		j.trace("w", gfunc.trig)
 
-config.root.mainloop()
+gl_vars.root.mainloop()
 

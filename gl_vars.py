@@ -1,4 +1,4 @@
-# config.py
+# gl_vars.py
 
 # This file stores the variables which need to be accessed and modified across different files. All of them have been initialised to NULL values as they are specifically initialised by functions called in driver.py
 
@@ -57,5 +57,4 @@ messages = []
 outVar = []
 # outVar is a list containing the status of each checkbox (corresponding to each output variable). It is used to determine which outputs are to be included in the listed output text.
 # Each element is an integer corresponding to the status of the checkbox, 0 meaning unselected and 1 meaning selected.
-# It is initialised in the function retrieveData defined in gui_functions.py, which is called whenever the button is pressed.
- 
+# It is initialised in the function retrieveData defined in gui_functions.py, which is called whenever the button is pressed. 
