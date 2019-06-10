@@ -103,7 +103,7 @@ def fillPages():
 	no_of_pages = len(gl_vars.pages)
 	gl_vars.chk_var_list1 = [None for x in range(no_of_pages)]
 	gl_vars.chk_var_list2 = [None for x in range(no_of_pages)]
-	#gl_vars.chk_var_list3 = [None for x in range(no_of_pages)]
+	gl_vars.chk_var_list3 = [None for x in range(no_of_pages)]
 	gl_vars.spn_box_list = [None for x in range(no_of_pages)]
 	for i in range(no_of_pages):
 		dimension_list = list(xr_dataSet[i].coords.keys())
@@ -112,8 +112,8 @@ def fillPages():
 		gl_vars.chk_var_list2[i] = [None for k in range(len(variable_list))]
 		gl_vars.spn_box_list[i] = [tk.Spinbox(gl_vars.pages[i]) for b in range(len(dimension_list)*2)]
 		n1 = 0
-		#gl_vars.chk_var_list3[i] = tk.IntVar(gl_vars.pages[i])
-		#tk.Checkbutton(gl_vars.pages[i], text = "Use SHAPEFILE", variable = gl_vars.chk_var_list3[i]).grid(row = n1, column = 10)
+		gl_vars.chk_var_list3[i] = tk.IntVar(gl_vars.pages[i])
+		tk.Checkbutton(gl_vars.pages[i], text = "Use SHAPEFILE", variable = gl_vars.chk_var_list3[i]).grid(row = n1, column = 10)
 		for j in dimension_list:	
 			createSelRow(j, n1, i)
 			createSelBox(j, n1, i, list(xr_dataSet[i][j].values))
@@ -171,9 +171,15 @@ def retrieveData():
 		if(rangeVar[x]):
 			gl_vars.messages[x][1] = gl_vars.spn_box_list[i][x*2+1].get()
 	gl_vars.outVar = [a.get() for a in gl_vars.chk_var_list2[i]]
-	sel_message, output_message = ffunc.getData(i)
-	printMessages(output_message,sel_message, i)
-
+	if (gl_vars.chk_var_list3[i].get() == 1 and gl_vars.output is None):
+		openPlotWindow(2)
+	elif (gl_vars.chk_var_list3[i].get() == 1):
+		masked_data = gl_vars.output
+		ffunc.getData3(i, masked_data)
+		gl_vars.output = None
+	else:
+		sel_message, output_message = ffunc.getData(i)
+		printMessages(output_message,sel_message, i)
 
 def printMessages(o_message, s_message, ind):
 	gl_vars.selBox[ind].delete(1.0,tk.END)
@@ -183,36 +189,43 @@ def printMessages(o_message, s_message, ind):
 
 def plotWindow():
 	openPlotWindow(0)
+
 def openPlotWindow(org):
 	i = gl_vars.nb.index("current")
-	var_list = list(gl_vars.data[i].data_vars.keys())
-	time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
 	window = tk.Toplevel(gl_vars.root)
-	tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
-	var = tk.StringVar(window)
-	var.set(var_list[0])
-	tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
-	tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
-	spin = tk.Spinbox(window, values = time_range)
-	spin.grid(row = 2, column = 1)
 	var2 = tk.IntVar(window)
-	tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 3, column = 0)
-	filename = ""
+	if (org != 2):
+		var_list = list(gl_vars.data[i].data_vars.keys())
+		time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
+		tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
+		var = tk.StringVar(window)
+		var.set(var_list[0])
+		tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
+		tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
+		spin = tk.Spinbox(window, values = time_range)
+		spin.grid(row = 2, column = 1)
+		tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 3, column = 0)
+	b1 = tk.Button(window, text = 'Confirm')
+	b1.grid(row = 10, column = 1)
 	var3 = tk.StringVar(window)
+	filename = ""
 	shp_ind = -1
 	places = []
 	output = None
 	def shapeSelect(event, b, c):
-		if (var2.get() == 1):
+		if (var2.get() == 1 or org == 2):
 			nonlocal places, filename
 			filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
-			tk.Label(window, text=filename).grid(row = 3, column = 1)
 			shp = gpd.read_file(filename)
 			places = list(shp['NAME'])
 			places2 = [i for i in places if i is not None]
 			places2.append("ALL")
+			tk.Label(window, text=filename).grid(row = 3, column = 1)
 			places2.sort()
 			ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 4, column = 1)
+		if (org == 2):
+			nonlocal b1
+			b1.config(command = shapeData)
 	def plotMapFull():
 		if (var2.get() == 0):
 			pfunc.plotMapFull(i,var.get(), time_range.index(spin.get()))
@@ -228,19 +241,23 @@ def openPlotWindow(org):
 			plac_ind = None
 		else:
 			plac_ind = places.index(var3.get())
-		gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
-		window2 = tk.Toplevel(gl_vars.root)
-		tk.Label(window2, text = "Press Save again to save the chosen shapefile masked data.").grid(row = 0, column = 0)
+		if (org != 2):
+			gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
+		else:
+			gl_vars.output = ffunc.getShapeData(i,None, None, filename, plac_ind)
+		if(org == 1):
+			window2 = tk.Toplevel(gl_vars.root)
+			tk.Label(window2, text = "Press Save again to save the chosen shapefile masked data.").grid(row = 0, column = 0)
 		window.destroy()
 
 	var2.trace("w", shapeSelect)
-	b1 = tk.Button(window, text = 'Confirm')
-	b1.grid(row = 10, column = 1)
 	if(org == 0):
 		b1.config(command = plotMapFull)
 	elif(org == 1):
 		var2.set(1)
 		b1.config(command = shapeData)
+	elif(org == 2):
+		shapeSelect(None,None,None)
 
 
 def exportToCSV():
