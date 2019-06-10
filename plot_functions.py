@@ -13,7 +13,7 @@ import re
 
 ##TODO. Merge the common parts of the two functions into a map init called at the start of both functions?
 ##Look into time-varying graphs and how they can be plotted.
-## Write code for non-mapping graphs.
+## Write code for non-map graphs.
 
 def plotMapFull(ind, var_name, time_index):
 	
@@ -73,7 +73,7 @@ def plotMapShape(ind,var_name, time_index, shpfile, plac_ind):
 	da1[var_name] = xr.DataArray(raster, coords=spatial_coords, dims=(lat_var, lon_var))
 	da_2 = da1
 
-	plt.figure()
+	fig = plt.figure()
 	ax = plt.axes(projection=ccrs.PlateCarree())
 	kwargs = dict(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
 
@@ -82,5 +82,8 @@ def plotMapShape(ind,var_name, time_index, shpfile, plac_ind):
 	ax.add_geometries(geometries, pc, edgecolor='gray', facecolor='none')
 
 	ax.set_global()
-
+	cid = fig.canvas.mpl_connect('button_press_event', onclick)
 	plt.show()
+
+def onclick(event):
+		print(event.button, event.x, event.y, event.xdata, event.ydata)

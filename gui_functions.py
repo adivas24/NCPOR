@@ -11,6 +11,7 @@ import fiona
 import file_functions as ffunc
 import plot_functions as pfunc
 from datetime import datetime
+import time
 
 def getMultiSets(filenames):
 	
@@ -102,6 +103,7 @@ def fillPages():
 	no_of_pages = len(gl_vars.pages)
 	gl_vars.chk_var_list1 = [None for x in range(no_of_pages)]
 	gl_vars.chk_var_list2 = [None for x in range(no_of_pages)]
+	#gl_vars.chk_var_list3 = [None for x in range(no_of_pages)]
 	gl_vars.spn_box_list = [None for x in range(no_of_pages)]
 	for i in range(no_of_pages):
 		dimension_list = list(xr_dataSet[i].coords.keys())
@@ -110,6 +112,8 @@ def fillPages():
 		gl_vars.chk_var_list2[i] = [None for k in range(len(variable_list))]
 		gl_vars.spn_box_list[i] = [tk.Spinbox(gl_vars.pages[i]) for b in range(len(dimension_list)*2)]
 		n1 = 0
+		#gl_vars.chk_var_list3[i] = tk.IntVar(gl_vars.pages[i])
+		#tk.Checkbutton(gl_vars.pages[i], text = "Use SHAPEFILE", variable = gl_vars.chk_var_list3[i]).grid(row = n1, column = 10)
 		for j in dimension_list:	
 			createSelRow(j, n1, i)
 			createSelBox(j, n1, i, list(xr_dataSet[i][j].values))
@@ -123,7 +127,7 @@ def fillPages():
 			n2 += 1
 		gl_vars.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
 	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 0)
-	tk.Button(gl_vars.root, text = 'Plot', command = openPlotWindow).grid(row = 100, column = 1)
+	tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 1)
 	tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 2)
 	tk.Button(gl_vars.root, text = 'Close', command = gl_vars.root.destroy).grid(row = 100, column = 3)
 
@@ -147,9 +151,9 @@ def createSelBox(name, num, ind, value_list):
 def createOPBox(name, ind, num):
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
 	textBox = tk.Text(gl_vars.pages[ind], height = 4)
-	textBox.grid(row = num, column = 1, columnspan = 10)
+	textBox.grid(row = num, column = 1, columnspan = 6)
 	scroll = tk.Scrollbar(gl_vars.pages[ind])
-	scroll.grid(row = num,column = 10)
+	scroll.grid(row = num,column = 6)
 	scroll.config(command=textBox.yview)
 	textBox.config(yscrollcommand=scroll.set)
 	return textBox
@@ -170,13 +174,16 @@ def retrieveData():
 	sel_message, output_message = ffunc.getData(i)
 	printMessages(output_message,sel_message, i)
 
+
 def printMessages(o_message, s_message, ind):
 	gl_vars.selBox[ind].delete(1.0,tk.END)
 	gl_vars.selBox[ind].insert(tk.INSERT, s_message)
 	gl_vars.opBox[ind].delete(1.0,tk.END)
 	gl_vars.opBox[ind].insert(tk.INSERT, o_message)
 
-def openPlotWindow():
+def plotWindow():
+	openPlotWindow(0)
+def openPlotWindow(org):
 	i = gl_vars.nb.index("current")
 	var_list = list(gl_vars.data[i].data_vars.keys())
 	time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
@@ -194,6 +201,7 @@ def openPlotWindow():
 	var3 = tk.StringVar(window)
 	shp_ind = -1
 	places = []
+	output = None
 	def shapeSelect(event, b, c):
 		if (var2.get() == 1):
 			nonlocal places, filename
@@ -214,8 +222,26 @@ def openPlotWindow():
 			else:
 				plac_ind = places.index(var3.get())
 			pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
+	def shapeData():
+		nonlocal window
+		if(var3.get() == "ALL"):
+			plac_ind = None
+		else:
+			plac_ind = places.index(var3.get())
+		gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
+		window2 = tk.Toplevel(gl_vars.root)
+		tk.Label(window2, text = "Press Save again to save the chosen shapefile masked data.").grid(row = 0, column = 0)
+		window.destroy()
+
 	var2.trace("w", shapeSelect)
-	tk.Button(window, text = 'Confirm', command = plotMapFull).grid(row = 10, column = 1)
+	b1 = tk.Button(window, text = 'Confirm')
+	b1.grid(row = 10, column = 1)
+	if(org == 0):
+		b1.config(command = plotMapFull)
+	elif(org == 1):
+		var2.set(1)
+		b1.config(command = shapeData)
+
 
 def exportToCSV():
 	i = gl_vars.nb.index("current")
@@ -223,14 +249,24 @@ def exportToCSV():
 	window = tk.Toplevel(gl_vars.root)
 	tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
 	var = tk.StringVar(window)
+	vr2 = tk.IntVar(window)
 	var.set(var_list[0])
 	tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
+	tk.Checkbutton(window, text = "Use SHAPEFILE?", variable = vr2).grid(row = 2, column = 1)
 	def saveCSV():
-		a,b = ffunc.getData2(i, var.get())
+		if (vr2.get() == 0):
+			a,b = ffunc.getData2(i, var.get())
+			c=np.resize(b,[b.shape[0],b.shape[1]*b.shape[2]])
+		else: 
+			a = ""
+			if(gl_vars.output is not None):
+				c = gl_vars.output.values
+				print(c) 
+			else:
+				openPlotWindow(1)
+				return
 		tk.Label(window, text = a).grid(row = 2, column = 0, columnspan = 2)
-		c=np.resize(b,[b.shape[0],b.shape[1]*b.shape[2]])
-		pd.DataFrame(c).to_csv(var.get() + ".csv", header = None, index = None)
+		pd.DataFrame(c).to_csv(var.get() + ".csv", header = None, index = None, na_rep = "NaN")
 		tk.Label(window, text = "Done").grid(row = 3, column = 1, columnspan = 2)
-
 	tk.Button(window, text = 'Save', command = saveCSV).grid(row = 10, column = 1)
 	

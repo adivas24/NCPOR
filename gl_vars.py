@@ -33,7 +33,10 @@ chk_var_list2 = []
 # chk_var_list2 is a list containing lists of IntVars which are the variables associated with the checkboxes for each output variable.
 # Each element is a list corresponding to the check-box(es) on a page. It is a jagged 2-d list.
 # It is initialised by the function fillPages, called in driver.py, defined in gui_functions.py. The initialisation is in two steps. First a series of null lists corresponding to each page is created. Subsequently, each list is initialised with a variable.
- 
+
+chk_var_list3 = []
+
+
 spn_box_list = []
 # spn_box_list is a list containing lists of tkinter Spinboxes used to select the input variables for retrieving data. Two spinboxes for each input variable.
 # Each element is a list corresponding to the spinboxes on a page. It is a jagged 2-d list.
@@ -58,3 +61,5 @@ outVar = []
 # outVar is a list containing the status of each checkbox (corresponding to each output variable). It is used to determine which outputs are to be included in the listed output text.
 # Each element is an integer corresponding to the status of the checkbox, 0 meaning unselected and 1 meaning selected.
 # It is initialised in the function retrieveData defined in gui_functions.py, which is called whenever the button is pressed. 
+
+output = None

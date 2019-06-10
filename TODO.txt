@@ -1,7 +1,12 @@
 1. Clean up. Documentation
 2. Add a map selector.
-3. Shapes in retrieve data option.
+3. Shapes in retrieve data option. (Partially done. Export to CSV allows you to specifically select the region you want. However, combining the rectangular range with the SHAPE specified is what I want to target next)
 4. Give user option to choose projection, colors etc
 
 5. The output is visible only for the last added one. Shift to a design with only one output box?
 6. Create and display statistics for the data.
+7. Use dictionaries instead of names everywhere?
+
+##TODO. Merge the common parts of the two functions into a map init called at the start of both functions?
+##Look into time-varying graphs and how they can be plotted.
+## Write code for non-map graphs.
