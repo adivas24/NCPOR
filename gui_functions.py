@@ -261,7 +261,7 @@ def exportToCSV():
 			a = ""
 			if(gl_vars.output is not None):
 				c = gl_vars.output.values
-				print(c) 
+				gl_vars.output = None
 			else:
 				openPlotWindow(1)
 				return
