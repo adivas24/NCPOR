@@ -12,6 +12,75 @@ import file_functions as ffunc
 import plot_functions as pfunc
 from datetime import datetime
 
+def getMultiSets(filenames):
+	
+	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
+	l1.grid(row = 0, column  = 0)
+	chk_vars = [tk.IntVar(gl_vars.root) for a in filenames]
+	var = tk.StringVar(gl_vars.root)
+	i = 1
+	chk_arr = [None for a in filenames]
+	for a in filenames:
+		chk_arr[i-1] = tk.Checkbutton(gl_vars.root, text = a, variable = chk_vars[i-1])
+		chk_arr[i-1].grid(row = i, column = 0)
+		i+=1
+	l2 = tk.Label(gl_vars.root, text='Enter a new name for the set: ')
+	l2.grid(row = i, column = 0)
+	filenames2 = filenames
+	text = tk.Entry(gl_vars.root, textvariable = var)
+	text.grid(row = i, column = 1)
+	def combine_files():
+		nonlocal filenames2
+		indxs = [a for a in range(len(filenames)) if chk_vars[a].get() == 1]
+		data_mod = [gl_vars.data[a] for a in indxs]
+		merged = xr.merge(data_mod)
+		filenames2 = [filenames[a] for a in range(len(filenames)) if a not in indxs]
+		copy = [gl_vars.data[a] for a in range(len(gl_vars.data)) if a not in indxs]
+		copy.append(merged)
+		gl_vars.data = copy
+		filenames2.append(var.get())
+
+	b1 = tk.Button(gl_vars.root, text = 'Combine', command = combine_files)
+	b1.grid(row = i+1, column = 0)
+	b2 = tk.Button(gl_vars.root, text = 'More (Refresh list)')
+	b3 = tk.Button(gl_vars.root, text = 'Done')
+	b3.grid(row = i+1, column = 2)
+
+	def getMore():
+		nonlocal l1, l2, b3, b2, b1, text, chk_arr
+		l2.destroy()
+		l1.destroy()
+		b1.destroy()
+		b2.destroy()
+		b3.destroy()
+		text.destroy()
+		for a in chk_arr:
+			a.destroy()
+		getMultiSets(filenames2)
+
+	b2.config(command = getMore)
+	b2.grid(row = i+1, column = 1)
+
+	def createGUI():
+		nonlocal l1, l2, b2, b3, b1, text, chk_arr
+		l2.destroy()
+		l1.destroy()
+		b1.destroy()
+		b2.destroy()
+		b3.destroy()
+		text.destroy()
+		for a in chk_arr:
+			a.destroy()
+		gl_vars.nb = ttk.Notebook(gl_vars.root)
+		addPages(filenames2)
+		fillPages()
+		for i in gl_vars.chk_var_list1:
+			for j in i:
+				j.trace("w",trig)
+	b3.config(command = createGUI)
+
+
+
 def addPages(filenames):
 	gl_vars.pages = [ttk.Frame(gl_vars.nb) for i in range(len(filenames))]
 	for i in range(len(filenames)):

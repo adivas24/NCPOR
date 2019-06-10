@@ -1,9 +1,7 @@
 1. Clean up. Documentation
 2. Add a map selector.
-3. Give user ability to make groups.
-4. Shapes in retrieve data option.
-5. Give user option to choose projection, colors etc
+3. Shapes in retrieve data option.
+4. Give user option to choose projection, colors etc
 
-6. The output is visible only for the last added one. Shift to a design with only one output box?
-7. Add shape file for data.
-8. Create and display statistics for the data.
+5. The output is visible only for the last added one. Shift to a design with only one output box?
+6. Create and display statistics for the data.

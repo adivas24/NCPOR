@@ -8,23 +8,18 @@ import plot_functions as pfunc
 import gl_vars
 
 gl_vars.root = tk.Tk()
+gl_vars.root.title('NetCDF file reader')
 filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
 
-#Add function here to make multisets.
-# Multiset <- 
 
 gl_vars.data = ffunc.openNETCDF(filenames)
-
-gl_vars.root.title('NetCDF file reader')
-
-gl_vars.nb = ttk.Notebook(gl_vars.root)
-
+#Add function here to make multisets.
 file_names = [a.split('/')[-1] for a in filenames]
-gfunc.addPages(file_names)
-gfunc.fillPages()
-for i in gl_vars.chk_var_list1:
-	for j in i:
-		j.trace("w", gfunc.trig)
+gfunc.getMultiSets(file_names)
+
+
+#print(file_names)
+
 
 gl_vars.root.mainloop()
 
