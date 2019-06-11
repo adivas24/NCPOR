@@ -1,20 +1,34 @@
+# plot_functions.py #
+
+import gl_vars
+
+import xarray as xr
+import numpy as np
+import pandas as pd
+import geopandas as gpd
+# Used for data manipulation and numerical calculations. 
+
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-import geopandas as gpd
+# Used for plotting
+
 import fiona
 import shapely.geometry as sgeom
-import numpy as np
-import xarray as xr
-import pandas as pd
 from rasterio import features
 from affine import Affine
-import gl_vars
-import re
+# Used for reading and applying shapefile mask.
 
-##TODO. Merge the common parts of the two functions into a map init called at the start of both functions?
-##Look into time-varying graphs and how they can be plotted.
-## Write code for non-map graphs.
 
+# TODO	Merge the common parts of the two functions into a map init called at the start of both functions?
+#		Look into time-varying graphs and how they can be plotted.
+# 		Write code for non-map graphs.
+#		Figure out how to modify the size of maps and maybe make it dynamic?
+
+# PRE-CONDITION
+#	ind: The index of the page, represents the NETCDF file being queried as an integer.
+#	var_name: The name of the variable being queried, in the form of a string.
+#	time_index: The index (as an integer) of the time point selected, at which the shape is being generated. If None, data across the entire range is returned as a list.
+#	gl_vars.data needs to have been initialized before function call.
 def plotMapFull(ind, var_name, time_index):
 	
 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
@@ -39,9 +53,19 @@ def plotMapFull(ind, var_name, time_index):
 	ax.set_global()
 	ax.coastlines()
 	plt.show()
+# POST-CONDITION
+#	The map is displayed in a new window, basic zoom functionality is inbuilt through the matplotlib window.
 
+#PRE-CONDITION
+#	ind: The index of the page, represents the NETDCF file being queried as an integer.
+#	var_name: The name of the variable being queried, in the form of a string. If None, it indicates all variables slected should be considered.
+#	time_index: The index (as an integer) of the time point selected, at which the shape is being generated. If None, data across the entire range is returned as a list.
+#	shpfile: A string containing the name and path of the SHAPEFILE(.shp) being used.
+#	plac_ind: As of now, it is a single integer containing the index of the place (specific geometry) selected by the user from the SHAPEFILE. None indicates the entire file being used. In the future a list should be passed, which can accurately select multiple but not all the places present. Maybe through a clickable-map interface.
+#	gl_vars.data should be initialized before the function call.
 def plotMapShape(ind,var_name, time_index, shpfile, plac_ind):
 
+	# A significant portion of this function can be replaced by a functions call to the one in file functions. Might reduce the number of imports at the top too.
 	pc = ccrs.PlateCarree()  #Needs to be user input in the future.
 	xds = gl_vars.data[ind]
 	for a in list(xds.dims):
@@ -84,6 +108,8 @@ def plotMapShape(ind,var_name, time_index, shpfile, plac_ind):
 	ax.set_global()
 	cid = fig.canvas.mpl_connect('button_press_event', onclick)
 	plt.show()
+# POST-CONDITION
+#	The map is displayed in a new window, basic zoom functionality is inbuilt through the matplotlib window.
 
 def onclick(event):
 		print(event.button, event.x, event.y, event.xdata, event.ydata)
