@@ -175,8 +175,9 @@ def retrieveData():
 		openPlotWindow(2)
 	elif (gl_vars.chk_var_list3[i].get() == 1):
 		masked_data = gl_vars.output
-		ffunc.getData3(i, masked_data)
+		sel_message, output_message = ffunc.getData3(i, masked_data)
 		gl_vars.output = None
+		printMessages(output_message, sel_message, i)
 	else:
 		sel_message, output_message = ffunc.getData(i)
 		printMessages(output_message,sel_message, i)
@@ -245,6 +246,8 @@ def openPlotWindow(org):
 			gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
 		else:
 			gl_vars.output = ffunc.getShapeData(i,None, None, filename, plac_ind)
+			window2 = tk.Toplevel(gl_vars.root)
+			tk.Label(window2, text = "Press RetrieveData again to display the chosen shapefile masked data.").grid(row = 0, column = 0)
 		if(org == 1):
 			window2 = tk.Toplevel(gl_vars.root)
 			tk.Label(window2, text = "Press Save again to save the chosen shapefile masked data.").grid(row = 0, column = 0)

@@ -72,21 +72,21 @@ def getData2(ind, var_name):
 	return sel_message, gl_vars.data[ind].variables[var_name].values[out_ind]
 
 def getData3(i, masked_data):
-	dimension_list = list(masked_data[ind].coords.keys())
-	variable_list = list(masked_data[ind].data_vars.keys())
+	dimension_list = list(gl_vars.data[i].coords.keys())
+	variable_list = list(masked_data.keys())
 	mess_ind = [[None, None] for i in dimension_list]
 	mess_ind_2 = [None for i in dimension_list] 
 	sel_message = "You have selected:\n"
 	j = 0
 	for x in dimension_list:
-		arr = [str(a) for a in masked_data[ind].variables[x].values]
+		arr = [str(a) for a in gl_vars.data[i].variables[x].values]
 		mess_ind[j][0] = arr.index(gl_vars.messages[j][0])
-		sel_message += x + ' ' + str(masked_data[ind].variables[x].values[mess_ind[j][0]])
+		sel_message += x + ' ' + str(gl_vars.data[i].variables[x].values[mess_ind[j][0]])
 		if (gl_vars.messages[j][1] is not None):
 			mess_ind[j][1] = arr.index(gl_vars.messages[j][1])
+			sel_message += ' : ' + str(gl_vars.data[i].variables[x].values[mess_ind[j][1]])
 			mess_ind[j].sort()
 			mess_ind_2[j] = slice(mess_ind[j][0],mess_ind[j][1])
-			sel_message += ' : ' + str(masked_data.variables[x].values[mess_ind[j][1]])
 		else:
 			mess_ind_2[j] = mess_ind[j][0]
 		sel_message += '\n'
@@ -96,13 +96,13 @@ def getData3(i, masked_data):
 	output_message = ""
 	for x in variable_list:
 		if(gl_vars.outVar[j]):
-			ord_arr = [dimension_list.index(a) for a in masked_data[ind].variables[x].dims]
+			ord_arr = [dimension_list.index(a) for a in gl_vars.data[i].variables[x].dims]
 			out_ind = tuple([mess_ind_2[a] for a in ord_arr])
-			temp = masked_data[ind].variables[x].values[out_ind]
+			temp = np.array(masked_data[x])[out_ind]
 			output_message += x + '\n' + str(temp) +'\nMean: '+str(np.nanmean(temp))+' Standard Deviation: '+str(np.nanstd(temp))+'\n'
 		j += 1
-	print(sel_message, output_message)
-	#return sel_message, output_message
+	#print(sel_message, output_message)
+	return sel_message, output_message
 
 def getShapeData(ind,var_name, time_index, shpfile, plac_ind):
 	
@@ -137,7 +137,7 @@ def getShapeData(ind,var_name, time_index, shpfile, plac_ind):
 		da1[var_name] = xr.DataArray(raster, coords=spatial_coords, dims=(lat_var, lon_var))
 		return da1.where(~np.isnan(da1[var_name]),other = np.nan)
 	else:
-		fin_arr = []
+		fin_arr = dict()
 		for a in list(gl_vars.data[ind].data_vars):
 			out_arr = []
 			da1 =  xds.data_vars[a][:]   #THIS IS WRONG. NEEDS TO BE READ FROM NC DATA
@@ -162,5 +162,5 @@ def getShapeData(ind,var_name, time_index, shpfile, plac_ind):
 				spatial_coords = {lat_var: da_1.coords[lat_var], lon_var: da_1.coords[lon_var]}
 				da_1[a] = xr.DataArray(raster, coords=spatial_coords, dims=(lat_var, lon_var))
 				out_arr.append(da_1.where(~np.isnan(da_1[a]),other = np.nan).values)
-			fin_arr.append(out_arr)
-		print(fin_arr)
+			fin_arr[a] = out_arr
+		return fin_arr
