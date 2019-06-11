@@ -17,7 +17,7 @@ root = None
 nb = None
 # nb is the Notebook widget defined in the themed tkinter widgets library, ttk. Since a tabbed window format is being used, a notebook to hold pages is created.
 # It is the container for all pages as well as widgets that are commonly used by all of the pages, like the buttons for retrieving data, plotting, exporting and closing.
-# It is initialised in driver.py through a direct constructor call. 
+# It is initialised in the createGUI function (called when a button is pressed) defined in gui_functions.py through a direct constructor call. 
 
 pages = []
 # pages is a list containing a ttk Frame widget corresponding to each .nc file added. Each page is one 'tab' of the tabbed window format that is being used.
