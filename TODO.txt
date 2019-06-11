@@ -5,6 +5,4 @@
 4. The output is visible only for the last added one. Shift to a design with only one output box?
 5. Use dictionaries instead of names everywhere?
 
-6. Merge the common parts of the two functions into a map init called at the start of both functions?
-7. Look into time-varying graphs and how they can be plotted.
-8. Write code for non-map graphs.
+6. Individual TODO lists are on each file.
