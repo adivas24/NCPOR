@@ -253,10 +253,10 @@ def retrieveData():
 		return
 	if (gl_vars.chk_var_list3[i].get() == 1):
 		masked_data = gl_vars.output
-		sel_message, output_message = ffunc.getData3(i, masked_data)
+		sel_message, output_message = ffunc.getData(i, 1, masked_data)
 		gl_vars.output = None
 	else:
-		sel_message, output_message = ffunc.getData(i)
+		sel_message, output_message = ffunc.getData(i, 0, None)
 	printMessages(output_message,sel_message, i)
 # POST-CONDITION
 #	gl_vars.messages is initialised with the contents of the spinboxes (i.e. the data ranges selected by the user)
@@ -303,8 +303,8 @@ def openPlotWindow(org):
 	b1 = tk.Button(window, text = 'Confirm')
 	b1.grid(row = 10, column = 1)
 	var3 = tk.StringVar(window)
-	filename = ""
-	shp_ind = -1
+	filename = None
+	plac_ind = None
 	places = []
 	output = None
 
@@ -312,34 +312,35 @@ def openPlotWindow(org):
 	#	Function is button triggered. Arguments are required dummies.
 	#	gl_vars.root needs to have been initialised at the start.
 	def shapeSelect(event, b, c):
+		nonlocal places, filename, var2
 		if (var2.get() == 1 or org == 2):
-			nonlocal places, filename
 			filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
-			shp = gpd.read_file(filename)
-			places = list(shp['NAME'])
-			places2 = [i for i in places if i is not None]
-			places2.append("ALL")
-			tk.Label(window, text=filename).grid(row = 3, column = 1)
-			places2.sort()
-			ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 4, column = 1)
+			if (filename == ""):
+				filename = None
+				var2.set(0)
+			else:
+				shp = gpd.read_file(filename)
+				places = list(shp['NAME'])
+				places2 = [i for i in places if i is not None]
+				places2.append("ALL")
+				tk.Label(window, text=filename).grid(row = 3, column = 1)
+				places2.sort()
+				ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 4, column = 1)
 		if (org == 2):
 			nonlocal b1
 			b1.config(command = shapeData)
+
 	# POST-CONDITION
 	#	This creates a pop-up window allowing the user to select a shape file and a place from the SHAPEFILE storing thrm in local function variables.
 	#	In mode 2, it also changes the button functionality for futher operation.
 	
 	# PRE-CONDITION
 	#	places and filename need to be initialised to appropriate values before function call.
-	def plotMapFull():
-		if (var2.get() == 0):
-			pfunc.plotMapFull(i,var.get(), time_range.index(spin.get()))
-		else:
-			if(var3.get() == "ALL"):
-				plac_ind = None
-			else:
-				plac_ind = places.index(var3.get())
-			pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
+	def plotMap():
+		nonlocal plac_ind
+		if(var2.get() == 1 and var3.get() != "ALL"):
+			plac_ind = places.index(var3.get())
+		pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
 	# POST-CONDITION
 	#	Appropriate map is generated through a function call, depending on whether SHPAPEFILE has been used or not.
 
@@ -352,9 +353,9 @@ def openPlotWindow(org):
 		else:
 			plac_ind = places.index(var3.get())
 		if (org != 2):
-			gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
+			gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)[0]
 		else:
-			gl_vars.output = ffunc.getShapeData(i,None, None, filename, plac_ind)
+			gl_vars.output = ffunc.getShapeData(i,None, None, filename, plac_ind)[0]
 			window2 = tk.Toplevel(gl_vars.root)
 			tk.Label(window2, text = "Press RetrieveData again to display the chosen shapefile masked data.").grid(row = 0, column = 0)
 		if(org == 1):
@@ -366,7 +367,7 @@ def openPlotWindow(org):
 
 	var2.trace("w", shapeSelect)
 	if(org == 0):
-		b1.config(command = plotMapFull)
+		b1.config(command = plotMap)
 	elif(org == 1):
 		var2.set(1)
 		b1.config(command = shapeData)
@@ -393,7 +394,7 @@ def exportToCSV():
 	#	vr2, window and var need to be initialised prior to function call.
 	def saveCSV():
 		if (vr2.get() == 0):
-			a,b = ffunc.getData2(i, var.get())
+			a,b = ffunc.getData(i, 0, var.get())
 			c=np.resize(b,[b.shape[0],b.shape[1]*b.shape[2]])
 		else: 
 			a = ""
