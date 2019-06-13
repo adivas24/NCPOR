@@ -329,7 +329,6 @@ def openPlotWindow(org):
 		if (org == 2):
 			nonlocal b1
 			b1.config(command = shapeData)
-
 	# POST-CONDITION
 	#	This creates a pop-up window allowing the user to select a shape file and a place from the SHAPEFILE storing thrm in local function variables.
 	#	In mode 2, it also changes the button functionality for futher operation.

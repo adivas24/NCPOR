@@ -1,8 +1,8 @@
-1. Clean up. Documentation
+1. Documentation and clean-up of code.
 2. Add a map selector.
 3. Give user option to choose projection, colors etc
 
 4. The output is visible only for the last added one. Shift to a design with only one output box?
-5. Use dictionaries instead of names everywhere?
+5. Use dictionaries instead of arrays everywhere?
 
 6. Individual TODO lists are on each file.

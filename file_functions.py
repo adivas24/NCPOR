@@ -28,6 +28,9 @@ def openNETCDF(filenames):
 # POST-CONDITION
 #	return value: an array containing xarray DataFrames, each corresponding to one NETCDF file.
 
+# PRE-CONDITION
+#	ind: The index of the page currently active, from which data is to be retrieved.
+#	gl_vars.data and gl_vars.messages need to have been initialized before function call.
 def getSelectedMessage(ind):
 	dimension_list = list(gl_vars.data[ind].coords.keys())
 	mess_ind = [[None, None] for i in dimension_list]
@@ -48,7 +51,14 @@ def getSelectedMessage(ind):
 		sel_message += '\n'
 		j += 1
 	return sel_message, mess_ind_2
+# POST-CONDITION
+#	return value: a 2-tuple containing a string with a message containing the data ranges selected and a list containing the actual ranges (as slices)/values (as integers) that can be fed as array indices to retrieve the data.
 
+# PRE-CONDITION
+#	ind: the index of the current page.
+#	org: Selects the mode of operation. 0 signifying the use of all the data, 1 signifying the use of masked data (provided as an argument).
+#	args: Additional arguments that may be supplied. In this case, in mode 0, it is the variable name (as a string), if None, all variables are selected. In mode 1, it is the masked data in the form of a xarray DataFrame.
+#	gl_vars.data must be initialised before function call.
 def getData(ind, org, *args):
 	sel_message, mess_ind_2 = getSelectedMessage(ind)
 	if (org == 0):
@@ -62,7 +72,13 @@ def getData(ind, org, *args):
 	elif(org == 1):
 		output_message = getOutputMessage(ind, mess_ind_2, args[0])
 	return sel_message, output_message
-				
+# POST-CONDITION
+#	return value: a 2-tuple. The first element is a string containing the message with selected data ranges. The second is a string containing the output ranges, except when a single variable name is provided in mode 1, in that case, it returns the entire xarray DataArray.
+
+# PRE-CONDITION
+#	ind: the index of the current page
+#	mess_ind_2: A list containing the output ranges, either as values (integers) or slices.
+#	org: specifies the mode of operation. If None, we use all the data. Otherwise, it is expected that org contains the masked data, in the form of a list.
 def getOutputMessage(ind, mess_ind_2, org):
 	variable_list = list(gl_vars.data[ind].data_vars.keys())
 	dimension_list = list(gl_vars.data[ind].coords.keys())
@@ -81,7 +97,13 @@ def getOutputMessage(ind, mess_ind_2, org):
 			output_message += x + '\n' + str(temp) +'\nMean: '+str(np.nanmean(temp))+' Standard Deviation: '+str(np.nanstd(temp))+'\n'
 		j += 1
 	return output_message
+# POST-CONDITION
+#	return value: A string containing the output data, ready for display, along with the mean and standard deviations.
 
+# PRE-CONDITION
+#	ind: The index of the current page
+#	var_name: The name of the output variable in question. If None, all are iterated through.
+#	time_index: The 
 def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
 	
 	lon_var, lat_var = None, None

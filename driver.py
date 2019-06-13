@@ -30,6 +30,7 @@ file_names = [a.split('/')[-1] for a in filenames]
 
 gfunc.getMultiSets(file_names)
 # This function prompts the user to select files which whose data is part of the same series, allowing queries whose timelines range across different files.
+# Further, in the pop-up window, a button is created which, when pressed, will create the GUI. 
 
 gl_vars.root.mainloop()
 # This keeps the tkinter widgets active.
