@@ -101,9 +101,12 @@ def getOutputMessage(ind, mess_ind_2, org):
 #	return value: A string containing the output data, ready for display, along with the mean and standard deviations.
 
 # PRE-CONDITION
-#	ind: The index of the current page
-#	var_name: The name of the output variable in question. If None, all are iterated through.
-#	time_index: The 
+#	ind: The index of the current page as an integer
+#	var_name: The name of the output variable in question as a string. If None, all are iterated through.
+#	time_index: The index of the time of required data as an integer. If None, all are iterated through
+#	shpfile: The name of the shapefile as a string. If None, no filters are aplied to the map.
+#	plac_ind: An integer specifying the shape that is finally selected. As of now, it is an integer, should be made an array in the future. None implies all shapes selected.
+#	gl_vars.data should have been initialised before function call.
 def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
 	
 	lon_var, lat_var = None, None
@@ -144,8 +147,16 @@ def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
 			fin_arr[a] = out_arr
 		out = fin_arr
 	return out, lon_var, lat_var, geometries
+# POST-CONDITION
+#	return variables: out is the xarray DataArray (or a list of it), ready for plotting or further processing.
+#					lon_var and lat_var are the strings which are the names of the variables corresponding to latitude and longitude in the NETCDF file in question.
+#					geometries is the list containing the shapes selected. If no shapefile was used, it is None.
 
-
+# PRE-CONDITION
+#	da1: The data (as an xarray DataArray) on which the masking needs to take place.
+#	lat_var and lon_var: Strings with the name of the latitude variable and longitude vatiable in the NETCDF file
+#	shpfile: The name of the shapefile to be used as a string.
+#	plac_ind: The integer index of the selected shape. If None, all are selected.
 def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
 	test = gpd.read_file(shpfile)
 	with fiona.open(shpfile) as records:
@@ -163,3 +174,6 @@ def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
 		shape_i = shapes
 	raster = features.rasterize(shape_i, out_shape=out_shape, fill = np.nan, transform = transform, dtype=float)
 	return raster, geometries
+# POST-CONDITION
+#	return values: raster is a feature which can be used to mask the data.
+#					geometries contains the shapes selected as a list.

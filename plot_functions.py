@@ -30,9 +30,13 @@ def onclick(event):
 		print(event.button, event.x, event.y, event.xdata, event.ydata)
 
 
-
+# PRE-CONDITION
+#	ind: The index of the page selected as an integer.
+#	var_name: The name of the variable in question as a String.
+#	time_index: The index of the time we are plotting the data for, as an integer.
+#	shpfile: The name of the shapefile as a string. If None, no shape filters are applied.
+#	plac_ind: The index of the place (shape selected from the Shapefile) as an integer. If None, not All are chosen
 def plotMapShape(ind,var_name, time_index, shpfile, plac_ind):
-
 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
 	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, time_index, shpfile, plac_ind)
 	fig = plt.figure()
@@ -45,3 +49,5 @@ def plotMapShape(ind,var_name, time_index, shpfile, plac_ind):
 		ax.coastlines()
 	ax.set_global()
 	plt.show()
+# POST-CONDITION
+#	The map with the specified variable, time, and shape is plotted in a matplotlib pop-up window.
