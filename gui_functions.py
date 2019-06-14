@@ -23,25 +23,29 @@ from datetime import datetime
 # TODO	Go through and clean up code.
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
+
+
+
 # PRE-CONDITION
 #	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
 #	gl_vars.root and gl_vars.data should be initialized before function call. 
 def getMultiSets(filenames):
-	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
-	l1.grid(row = 0, column  = 0)
+	print(gl_vars.font1.actual())
+	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:", font = gl_vars.font1)
+	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
 	chk_vars = [tk.IntVar(gl_vars.root) for a in filenames]
 	var = tk.StringVar(gl_vars.root)
 	i = 1
 	chk_arr = [None for a in filenames]
 	for a in filenames:
 		chk_arr[i-1] = tk.Checkbutton(gl_vars.root, text = a, variable = chk_vars[i-1])
-		chk_arr[i-1].grid(row = i, column = 0)
+		chk_arr[i-1].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
 		i+=1
-	l2 = tk.Label(gl_vars.root, text='Enter a new name for the set: ')
-	l2.grid(row = i, column = 0)
+	l2 = tk.Label(gl_vars.root, text='Name for new set: ')
+	l2.grid(row = i, column = 0, pady = 8, columnspan = 2, sticky = tk.W, padx = 10)
 	filenames2 = filenames
 	text = tk.Entry(gl_vars.root, textvariable = var)
-	text.grid(row = i, column = 1)
+	text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
 	
 	# PRE-CONDITION
 	#	gl_vars.data needs to have been initialised earlier.
@@ -59,11 +63,9 @@ def getMultiSets(filenames):
 	# POST-CONDITION
 	#	gl_vars.data and filenames2 now contain a smaller list after combining the selected Datasets.
 
-	b1 = tk.Button(gl_vars.root, text = 'Combine', command = combine_files)
-	b1.grid(row = i+1, column = 0)
+	b1 = tk.Button(gl_vars.root, text = 'Combine')
 	b2 = tk.Button(gl_vars.root, text = 'More (Refresh list)')
 	b3 = tk.Button(gl_vars.root, text = 'Done')
-	b3.grid(row = i+1, column = 2)
 
 	# PRE-CONDITION
 	#	No-prereqs as such. Outer function needs to work and should not form cyclic calls.
@@ -81,8 +83,6 @@ def getMultiSets(filenames):
 	# POST-CONDITION
 	#	Cleans the current window and refreshes everything after resetting the filenames.
 
-	b2.config(command = getMore)
-	b2.grid(row = i+1, column = 1)
 
 	# PRE-CONDITION
 	#	Outer function should be working. gl_vars.root needs to have been initialised.	
@@ -105,8 +105,16 @@ def getMultiSets(filenames):
 	# POST-CONDITION
 	#	Initializes the first steps towards creating the GUI. Destroys the previous widget setup and creates a notebook, with each page corresponding to the datasets in gl_var.data after combining.
 	# 	Function calls to create and add the pages are done and one set of IntVars (correspoding to the radio buttons) are bound to the function trigger.
-
+	b1.config(command = combine_files)
+	b2.config(command = getMore)
 	b3.config(command = createGUI)
+	b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
+	b2.grid(row = i+1, column = 2)
+	b3.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
+	gl_vars.root.grid_columnconfigure(1, minsize=30)
+	gl_vars.root.grid_columnconfigure(3, minsize=30)
+	gl_vars.root.grid_columnconfigure(0, minsize=150)
+	gl_vars.root.grid_columnconfigure(4, minsize=150)
 # POST-CONDITION
 #	Initially, a pop-up window to allow the user to combine the selected files is shown. After all the combining, the user can then press a button to generate the next interface of the GUI, which is used to actually retrieve and visualise the data.
 # 	The tkinter notebook is initialised in an inner function.
@@ -118,7 +126,7 @@ def addPages(filenames):
 	gl_vars.pages = [ttk.Frame(gl_vars.nb) for i in range(len(filenames))]
 	for i in range(len(filenames)):
 		gl_vars.nb.add(gl_vars.pages[i], text = filenames[i])
-	gl_vars.nb.grid(columnspan=2)
+	gl_vars.nb.grid(row = 0, column = 0, columnspan=6)
 # POST-CONDITION
 #	gl_vars.pages is initialised with Tkinter frame widgets, which are then added to the tkinter Notebook. 
 
@@ -159,13 +167,17 @@ def fillPages():
 			createSelBox(j, n1, i, list(xr_dataSet[i][j].values))
 			n1 += 1
 		n1+=5
-		gl_vars.selBox = [createOPBox("Selection", i, n1) for l in range(no_of_pages)]
+		#gl_vars.selBox = [createOPBox("Selection", i, n1) for l in range(no_of_pages)]
 		n2 = 1
 		tk.Label(gl_vars.pages[i], text="Choose output variables:").grid(row = n1+1, column = 0)
 		for k in variable_list:
 			createCheckBox(k, i, n1+1, n2)
 			n2 += 1
-		gl_vars.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
+		#gl_vars.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
+	gl_vars.selBox1 = tk.Text(gl_vars.root, height = 4)
+	gl_vars.selBox1.grid(row = 90, column = 0)
+	gl_vars.opBox1 = tk.Text(gl_vars.root, height = 4)
+	gl_vars.opBox1.grid(row = 90, column = 1)
 	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 0)
 	tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 1)
 	tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 2)
@@ -268,10 +280,10 @@ def retrieveData():
 #	s_message: This is a string which lists out the selected variable ranges. 
 #	gl_vars.selBox and gl_vars.opBox needs to have been initialised befire function call.
 def printMessages(o_message, s_message, ind):
-	gl_vars.selBox[ind].delete(1.0,tk.END)
-	gl_vars.selBox[ind].insert(tk.INSERT, s_message)
-	gl_vars.opBox[ind].delete(1.0,tk.END)
-	gl_vars.opBox[ind].insert(tk.INSERT, o_message)
+	gl_vars.selBox1.delete(1.0,tk.END)
+	gl_vars.selBox1.insert(tk.INSERT, s_message)
+	gl_vars.opBox1.delete(1.0,tk.END)
+	gl_vars.opBox1.insert(tk.INSERT, o_message)
 # POST-CONDITION
 #	messages are printed in the appropriate Text boxes.
 

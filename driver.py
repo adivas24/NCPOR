@@ -5,6 +5,8 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilenames
+import tkinter.font as tkFont
+
 # The tkinter library is used to create various widgets for the GUI. ttk contains advanced widgets.
 
 import file_functions as ffunc
@@ -14,8 +16,10 @@ import gl_vars
 # These are python files in the same directory which contain relevant functions. Although, not all have directly been used here, all have been imported.
 
 gl_vars.root = tk.Tk()
+print(tkFont.families())
 # Creation of the main tkinter window and starting the tcl/tk interpreter and storing the object refernece in the variable present in gl_vars.
-
+gl_vars.font1 = tkFont.Font(root = gl_vars.root, family = "newspaper", size = 12)
+#print(gl_vars.font1.actual())
 gl_vars.root.title('NetCDF file reader')
 # Sets the title for the window. Later can be replaced by the actual name of the software.
 
