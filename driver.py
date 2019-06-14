@@ -25,6 +25,11 @@ gl_vars.root.title('NetCDF file reader')
 # Sets the title for the window. Later can be replaced by the actual name of the software.
 
 filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
+try:
+	temp = filenames[0]
+except:
+	gl_vars.root.destroy()
+	exit()
 # This tkinter function creates a pop-up window through which the user can select multiple .nc files. filenames, contains the list of the names (with complete paths) stored in the form of strings, selected by the user.
 
 gl_vars.data = ffunc.openNETCDF(filenames)

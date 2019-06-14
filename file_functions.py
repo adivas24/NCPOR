@@ -46,7 +46,7 @@ def getSelectedMessage(ind):
 			mess_ind[j][1] = arr.index(gl_vars.messages[j][1])
 			sel_message += ' : ' + str(gl_vars.data[ind].variables[x].values[mess_ind[j][1]])
 			mess_ind[j].sort()
-			mess_ind_2[j] = slice(mess_ind[j][0],mess_ind[j][1])
+			mess_ind_2[j] = slice(mess_ind[j][0],mess_ind[j][1]+1)
 		else:
 			mess_ind_2[j] = mess_ind[j][0]
 		sel_message += '\n'

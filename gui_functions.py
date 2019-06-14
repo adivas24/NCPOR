@@ -134,7 +134,6 @@ def trig(event,b,c):
 	dats = event.split('_')
 	i = int(dats[2])
 	n1 = int(dats[1])
-	gl_vars.spn_box_list[i][2*n1].grid(row = 5+n1, column = 1)
 	if (gl_vars.chk_var_list1[i][n1].get() == 0):
 		gl_vars.spn_box_list[i][2*n1+1].grid_forget()
 	else:
@@ -173,11 +172,11 @@ def fillPages():
 			n2 += 1
 		#gl_vars.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
 	tk.Label(gl_vars.root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
-	gl_vars.selBox1 = tk.Text(gl_vars.root, height = 4, width = 5)
-	gl_vars.selBox1.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	gl_vars.selBox = tk.Text(gl_vars.root, height = 4, width = 5)
+	gl_vars.selBox.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
 	tk.Label(gl_vars.root, text="Output:").grid(column = 5, row = 90, sticky = tk.W, padx = 5, pady = 5)
-	gl_vars.opBox1 = tk.Text(gl_vars.root, height = 4, width = 5)
-	gl_vars.opBox1.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	gl_vars.opBox = tk.Text(gl_vars.root, height = 4, width = 5)
+	gl_vars.opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
 	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
 	tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 3, sticky = tk.E + tk.W, pady = 5)
 	tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 5, sticky = tk.E + tk.W, pady = 5)
@@ -213,10 +212,8 @@ def createSelRow(name, num, ind):
 	gl_vars.chk_var_list1[ind][num] = tk.IntVar(gl_vars.pages[ind], name = "var_"+str(num)+ "_" + str(ind))
 	r1 = tk.Radiobutton(gl_vars.pages[ind], text = 'Single', variable = gl_vars.chk_var_list1[ind][num], value = 0)
 	r1.grid(row = num, column = 1)
-	r1.deselect()
-	r2 = tk.Radiobutton(gl_vars.pages[ind], text = 'Range', variable = gl_vars.chk_var_list1[ind][num], value = 1)
+	r2 = tk.Radiobutton(gl_vars.pages[ind], text = 'Range (Inclusive)', variable = gl_vars.chk_var_list1[ind][num], value = 1)
 	r2.grid(row = num, column = 2)
-	r2.deselect()
 # POST-CONDITION
 #	Each call of the function generates one label, and two radio buttons which are placed and then deselected.
 #	chk_var_list1 is initialised with actual vars.
@@ -231,6 +228,7 @@ def createSelBox(name, num, ind, value_list):
 	value_list.sort()
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num+5, column = 0)
 	gl_vars.spn_box_list[ind][2*num].configure(values=value_list)
+	gl_vars.spn_box_list[ind][2*num].grid(row = num+5, column = 1)
 	gl_vars.spn_box_list[ind][2*num+1].configure(values=value_list)
 # POST-CONDITION
 #	Each function call creates and places one label and creates two spin boxes with the given range for the given variable.
@@ -240,15 +238,15 @@ def createSelBox(name, num, ind, value_list):
 #	ind: The index of the page (.nc file) as an integer.
 #	num: an integer denoting the row number.
 #	gl_vars.pages needs to have been initialised before function call.
-def createOPBox(name, ind, num):
-	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
-	textBox = tk.Text(gl_vars.pages[ind], height = 4)
-	textBox.grid(row = num, column = 1, columnspan = 6)
-	scroll = tk.Scrollbar(gl_vars.pages[ind])
-	scroll.grid(row = num,column = 6)
-	scroll.config(command=textBox.yview)
-	textBox.config(yscrollcommand=scroll.set)
-	return textBox
+# def createOPBox(name, ind, num):
+# 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
+# 	textBox = tk.Text(gl_vars.pages[ind], height = 4)
+# 	textBox.grid(row = num, column = 1, columnspan = 6)
+# 	scroll = tk.Scrollbar(gl_vars.pages[ind])
+# 	scroll.grid(row = num,column = 6)
+# 	scroll.config(command=textBox.yview)
+# 	textBox.config(yscrollcommand=scroll.set)
+# 	return textBox
 # POST-CONDITION
 #	Each function call creates and places a label (of the given name) along with a textbox and scrollbar. Thetkinter instance of the Text widget is returned ny the function.
 
@@ -297,10 +295,10 @@ def retrieveData():
 #	s_message: This is a string which lists out the selected variable ranges. 
 #	gl_vars.selBox and gl_vars.opBox needs to have been initialised befire function call.
 def printMessages(o_message, s_message, ind):
-	gl_vars.selBox1.delete(1.0,tk.END)
-	gl_vars.selBox1.insert(tk.INSERT, s_message)
-	gl_vars.opBox1.delete(1.0,tk.END)
-	gl_vars.opBox1.insert(tk.INSERT, o_message)
+	gl_vars.selBox.delete(1.0,tk.END)
+	gl_vars.selBox.insert(tk.INSERT, s_message)
+	gl_vars.opBox.delete(1.0,tk.END)
+	gl_vars.opBox.insert(tk.INSERT, o_message)
 # POST-CONDITION
 #	messages are printed in the appropriate Text boxes.
 
@@ -318,6 +316,8 @@ def openPlotWindow(org):
 	i = gl_vars.nb.index("current")
 	window = tk.Toplevel(gl_vars.root)
 	var2 = tk.IntVar(window)
+	varn = tk.StringVar(window)
+	varn.set("PlateCarree")
 	if (org != 2):
 		var_list = list(gl_vars.data[i].data_vars.keys())
 		time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
@@ -328,10 +328,14 @@ def openPlotWindow(org):
 		tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
 		spin = tk.Spinbox(window, values = time_range)
 		spin.grid(row = 2, column = 1)
-		tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 3, column = 0)
+		tk.Label(window, text = "Select projection: ").grid(row = 3, column = 0)
+		proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
+		ttk.Combobox(window, textvariable = varn, values = proj_list).grid(row = 3, column = 1)
+		tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 4, column = 0)
 	b1 = tk.Button(window, text = 'Confirm')
 	b1.grid(row = 10, column = 1)
 	var3 = tk.StringVar(window)
+	var3.set("ALL")
 	filename = None
 	plac_ind = None
 	places = []
@@ -352,9 +356,9 @@ def openPlotWindow(org):
 				places = list(shp['NAME'])
 				places2 = [i for i in places if i is not None]
 				places2.append("ALL")
-				tk.Label(window, text=filename).grid(row = 3, column = 1)
+				tk.Label(window, text=filename).grid(row = 4, column = 1)
 				places2.sort()
-				ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 4, column = 1)
+				ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 5, column = 1)
 		if (org == 2):
 			nonlocal b1
 			b1.config(command = shapeData)
@@ -365,10 +369,11 @@ def openPlotWindow(org):
 	# PRE-CONDITION
 	#	places and filename need to be initialised to appropriate values before function call.
 	def plotMap():
+		proj_string = varn.get()
 		nonlocal plac_ind
 		if(var2.get() == 1 and var3.get() != "ALL"):
 			plac_ind = places.index(var3.get())
-		pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind)
+		pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
 	# POST-CONDITION
 	#	Appropriate map is generated through a function call, depending on whether SHPAPEFILE has been used or not.
 
