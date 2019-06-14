@@ -262,11 +262,7 @@ def createCheckBox(data_var, ind, num, num2):
 # POST-CONDITION
 #	Each function call creates and places a checkbox in the given page, at the given position, with the appropriate label.
 #	gl_vars.chk_var_list2 is completely initialised with with named tkinter IntVar. Each associated with a checkbox.
-
-# PRE-CONDITION
-#	gl_vars.nb, gl_vars.spn_box_list, gl_vars.chk_var_list1, and gl_vars.chk_var_list3 need to have been initialised.
-#	Whether gl_vars.output is None or not, will affect the function output. 
-def retrieveData():
+def getIndexes():
 	i = gl_vars.nb.index("current")
 	rangeVar = [a.get() for a in gl_vars.chk_var_list1[i]]
 	gl_vars.messages = [[None, None] for a in range(len(rangeVar))]
@@ -275,6 +271,12 @@ def retrieveData():
 		if(rangeVar[x]):
 			gl_vars.messages[x][1] = gl_vars.spn_box_list[i][x*2+1].get()
 	gl_vars.outVar = [a.get() for a in gl_vars.chk_var_list2[i]]
+# PRE-CONDITION
+#	gl_vars.nb, gl_vars.spn_box_list, gl_vars.chk_var_list1, and gl_vars.chk_var_list3 need to have been initialised.
+#	Whether gl_vars.output is None or not, will affect the function output. 
+def retrieveData():
+	i = gl_vars.nb.index("current")
+	getIndexes()
 	if (gl_vars.chk_var_list3[i].get() == 1 and gl_vars.output is None):
 		openPlotWindow(2)
 		return
@@ -328,9 +330,10 @@ def openPlotWindow(org):
 		tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
 		spin = tk.Spinbox(window, values = time_range)
 		spin.grid(row = 2, column = 1)
-		tk.Label(window, text = "Select projection: ").grid(row = 3, column = 0)
-		proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
-		ttk.Combobox(window, textvariable = varn, values = proj_list).grid(row = 3, column = 1)
+		if(org != 1):
+			tk.Label(window, text = "Select projection: ").grid(row = 3, column = 0)
+			proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
+			ttk.Combobox(window, textvariable = varn, values = proj_list).grid(row = 3, column = 1)
 		tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 4, column = 0)
 	b1 = tk.Button(window, text = 'Confirm')
 	b1.grid(row = 10, column = 1)
@@ -427,6 +430,7 @@ def exportToCSV():
 	#	vr2, window and var need to be initialised prior to function call.
 	def saveCSV():
 		if (vr2.get() == 0):
+			getIndexes()
 			a,b = ffunc.getData(i, 0, var.get())
 			c=np.resize(b,[b.shape[0],b.shape[1]*b.shape[2]])
 		else: 

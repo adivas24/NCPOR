@@ -6,3 +6,9 @@
 5. Use dictionaries instead of arrays everywhere?
 
 * Individual TODO lists are on each file.
+
+6. Add statistics column. Where we can select months/years and get more specific averages and stddevs.
+7. Add the ability to plot these, an areal average on a time graph, while a time averaged on a spatial graph.
+8. Vector graphing for the u10,v10 data.
+9. Creation of time-series data, which can then be saved as an animation (.gif/.avi).
+10, Allow all types of images to be stored as svg/pdf/jpg/png.

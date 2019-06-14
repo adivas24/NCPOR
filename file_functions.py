@@ -61,6 +61,7 @@ def getSelectedMessage(ind):
 #	args: Additional arguments that may be supplied. In this case, in mode 0, it is the variable name (as a string), if None, all variables are selected. In mode 1, it is the masked data in the form of a xarray DataFrame.
 #	gl_vars.data must be initialised before function call.
 def getData(ind, org, *args):
+	dimension_list = list(gl_vars.data[ind].coords.keys())
 	sel_message, mess_ind_2 = getSelectedMessage(ind)
 	if (org == 0):
 		if (args[0] is None):
