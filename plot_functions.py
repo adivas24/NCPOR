@@ -48,6 +48,7 @@ def plotMapShape(ind,var_name, time_index, shpfile, plac_ind):
 	else:
 		ax.coastlines()
 	ax.set_global()
+	plt.text(-180,-120, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
 	plt.show()
 # POST-CONDITION
 #	The map with the specified variable, time, and shape is plotted in a matplotlib pop-up window.

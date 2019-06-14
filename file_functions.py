@@ -38,6 +38,7 @@ def getSelectedMessage(ind):
 	sel_message = "You have selected:\n"
 	j = 0
 	for x in dimension_list:
+		# ADD AN if TIME, cover to only date datetime[ns64] is quite ugly.
 		arr = [str(a) for a in gl_vars.data[ind].variables[x].values]
 		mess_ind[j][0] = arr.index(gl_vars.messages[j][0])
 		sel_message += x + ' ' + str(gl_vars.data[ind].variables[x].values[mess_ind[j][0]])

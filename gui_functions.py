@@ -24,14 +24,12 @@ from datetime import datetime
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
 
-
-
 # PRE-CONDITION
 #	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
 #	gl_vars.root and gl_vars.data should be initialized before function call. 
 def getMultiSets(filenames):
-	print(gl_vars.font1.actual())
-	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:", font = gl_vars.font1)
+	#print(gl_vars.font1.actual())
+	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
 	chk_vars = [tk.IntVar(gl_vars.root) for a in filenames]
 	var = tk.StringVar(gl_vars.root)
@@ -126,7 +124,7 @@ def addPages(filenames):
 	gl_vars.pages = [ttk.Frame(gl_vars.nb) for i in range(len(filenames))]
 	for i in range(len(filenames)):
 		gl_vars.nb.add(gl_vars.pages[i], text = filenames[i])
-	gl_vars.nb.grid(row = 0, column = 0, columnspan=6)
+	gl_vars.nb.grid(row = 0, column = 0, columnspan=9, sticky = tk.E + tk.W, padx = 5)
 # POST-CONDITION
 #	gl_vars.pages is initialised with Tkinter frame widgets, which are then added to the tkinter Notebook. 
 
@@ -174,14 +172,33 @@ def fillPages():
 			createCheckBox(k, i, n1+1, n2)
 			n2 += 1
 		#gl_vars.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
-	gl_vars.selBox1 = tk.Text(gl_vars.root, height = 4)
-	gl_vars.selBox1.grid(row = 90, column = 0)
-	gl_vars.opBox1 = tk.Text(gl_vars.root, height = 4)
-	gl_vars.opBox1.grid(row = 90, column = 1)
-	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 0)
-	tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 1)
-	tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 2)
-	tk.Button(gl_vars.root, text = 'Close', command = gl_vars.root.destroy).grid(row = 100, column = 3)
+	tk.Label(gl_vars.root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
+	gl_vars.selBox1 = tk.Text(gl_vars.root, height = 4, width = 5)
+	gl_vars.selBox1.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	tk.Label(gl_vars.root, text="Output:").grid(column = 5, row = 90, sticky = tk.W, padx = 5, pady = 5)
+	gl_vars.opBox1 = tk.Text(gl_vars.root, height = 4, width = 5)
+	gl_vars.opBox1.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
+	tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 3, sticky = tk.E + tk.W, pady = 5)
+	tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 5, sticky = tk.E + tk.W, pady = 5)
+	tk.Button(gl_vars.root, text = 'Close', command = gl_vars.root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
+	gl_vars.root.grid_columnconfigure(0, minsize=30)
+	gl_vars.root.grid_columnconfigure(1, minsize=150)
+	gl_vars.root.grid_columnconfigure(2, minsize=30)
+	gl_vars.root.grid_columnconfigure(3, minsize=150)
+	gl_vars.root.grid_columnconfigure(4, minsize=30)
+	gl_vars.root.grid_columnconfigure(5, minsize=150)
+	gl_vars.root.grid_columnconfigure(6, minsize=30)
+	gl_vars.root.grid_columnconfigure(7, minsize=30)
+	gl_vars.root.grid_columnconfigure(8, minsize=150)
+	#gl_vars.root.grid_rowconfigure(90, minsize=10)
+	gl_vars.root.grid_rowconfigure(91, minsize=20)
+	gl_vars.root.grid_rowconfigure(92, minsize=20)
+	gl_vars.root.grid_rowconfigure(93, minsize=20)
+
+
+
+
 # POST-CONDITION
 #	Each page is filled with Radio-buttons, Spinboxes, Checkboxes, Buttons and appropriate labels.
 #	The global variables, chk_var_list1, chk_var_list2, chk_var_list3, and spn_box_list are initialised. 
