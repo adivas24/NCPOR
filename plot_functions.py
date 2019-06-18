@@ -11,6 +11,7 @@ import geopandas as gpd
 import cartopy 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 # Used for plotting
 
 import fiona
@@ -24,10 +25,11 @@ from affine import Affine
 # 		Write code for non-map graphs.
 #		Figure out how to modify the size of maps and maybe make it dynamic?
 
-
-	
-def onclick(event):
-		print(event.button, event.x, event.y, event.xdata, event.ydata)
+#if __name__ == "__main__":
+	#import numpy as np
+	#from matplotlib import pyplot as plt
+# def onclick(event):
+# 		print(event.button, event.x, event.y, event.xdata, event.ydata)
 
 
 # PRE-CONDITION
@@ -39,7 +41,7 @@ def onclick(event):
 def plotMapShape(ind,var_name, time_index, shpfile, plac_ind, proj_string):
 
 	proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
-	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
 	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, time_index, shpfile, plac_ind)
 	fig = plt.figure()
@@ -94,3 +96,44 @@ def getProjection(proj_string):
 	"SouthPolarStereo":ccrs.SouthPolarStereo()
 	}
 	return proj_dict[proj_string]
+
+
+def animation(ind,var_name, time_index, shpfile, plac_ind, proj_string):
+	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+	plt.style.use('seaborn-pastel')
+	fig = plt.figure()
+	ax = plt.axes(projection=pc)
+	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, 0, shpfile, plac_ind)
+	kwargs = dict(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
+	mesh = xds.plot.pcolormesh(**kwargs)
+	cl = None
+	if (geometries is not None):
+		ax.add_geometries(geometries, pc, edgecolor='black', facecolor='none')
+	else:
+		cl = ax.coastlines()
+	ax.set_global()
+	textvar1 = ax.text(-175, -60,ax.title.get_text() + "\nMean: "+ str(np.nanmean(np.array(xds)))+ "\nStd Dev: "+ str(np.nanstd(np.array(xds))), size = "xx-small")
+	#textvar = ax.text(-180,-90, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
+	#title = ax.title
+	#plt.show()
+
+	def init():
+		nonlocal cl
+		cl.set_visible(True)
+		return cl,ax.title
+
+	def animate(i):
+		nonlocal  mesh,cl,textvar1
+		xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind,var_name, i, shpfile, plac_ind)
+		mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, add_colorbar = False)
+		print(i)
+		textvar1.set_text(ax.title.get_text()+ "\nMean: "+ str(np.nanmean(np.array(xds)))+ "\nStandard Deviation: "+ str(np.nanstd(np.array(xds))))
+		cl.set_visible(True)	#textvar.set_text("Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
+		return mesh,cl,textvar1
+
+
+	anim = FuncAnimation(fig, animate, frames=776, interval=20, blit=True, repeat=False, init_func = init)
+	#plt.show()
+
+	anim.save('air_temp.gif', writer='imagemagick')
+# 	

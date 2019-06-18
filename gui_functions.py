@@ -376,7 +376,8 @@ def openPlotWindow(org):
 		nonlocal plac_ind
 		if(var2.get() == 1 and var3.get() != "ALL"):
 			plac_ind = places.index(var3.get())
-		pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+		#pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+		pfunc.animation(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
 	# POST-CONDITION
 	#	Appropriate map is generated through a function call, depending on whether SHPAPEFILE has been used or not.
 
