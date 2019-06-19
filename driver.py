@@ -36,7 +36,7 @@ gl_vars.data = ffunc.openNETCDF(filenames)
 # This gets the data from the NETCDF files by utilising the function defined in file_functions.py. It returns a list of xarray Datasets, each corresponding to one of the .nc files selected.
 
 file_names = [a.split('/')[-1] for a in filenames]
-# Slicing the names so that it contains only the filename, and not the entire path.
+# Slicing the names so that they contains only the filename, and not the entire path.
 
 gfunc.getMultiSets(file_names)
 # This function prompts the user to select files which whose data is part of the same series, allowing queries whose timelines range across different files.

@@ -31,13 +31,17 @@ def getMultiSets(filenames):
 	#print(gl_vars.font1.actual())
 	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
-	chk_vars = [tk.IntVar(gl_vars.root) for a in filenames]
+	
+	chk_vars = dict()
+	chk_arr = dict()
+
 	var = tk.StringVar(gl_vars.root)
+	var.set("newFile")
 	i = 1
-	chk_arr = [None for a in filenames]
 	for a in filenames:
-		chk_arr[i-1] = tk.Checkbutton(gl_vars.root, text = a, variable = chk_vars[i-1])
-		chk_arr[i-1].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
+		chk_vars[a] = tk.IntVar(gl_vars.root)
+		chk_arr[a] = tk.Checkbutton(gl_vars.root, text = a, variable = chk_vars[a])
+		chk_arr[a].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
 		i+=1
 	l2 = tk.Label(gl_vars.root, text='Name for new set: ')
 	l2.grid(row = i, column = 0, pady = 8, columnspan = 2, sticky = tk.W, padx = 10)
@@ -50,7 +54,7 @@ def getMultiSets(filenames):
 	#	var (The text Entry widget) should have a valid string.
 	def combine_files():
 		nonlocal filenames2
-		indxs = [a for a in range(len(filenames)) if chk_vars[a].get() == 1]
+		indxs = [a for a in range(len(filenames)) if chk_vars[filenames[a]].get() == 1]
 		data_mod = [gl_vars.data[a] for a in indxs]
 		merged = xr.merge(data_mod)
 		filenames2 = [filenames[a] for a in range(len(filenames)) if a not in indxs]
@@ -75,7 +79,7 @@ def getMultiSets(filenames):
 		b2.destroy()
 		b3.destroy()
 		text.destroy()
-		for a in chk_arr:
+		for a in chk_arr.values():
 			a.destroy()
 		getMultiSets(filenames2)
 	# POST-CONDITION
@@ -92,7 +96,7 @@ def getMultiSets(filenames):
 		b2.destroy()
 		b3.destroy()
 		text.destroy()
-		for a in chk_arr:
+		for a in chk_arr.values():
 			a.destroy()
 		gl_vars.nb = ttk.Notebook(gl_vars.root)
 		menu = tk.Menu(gl_vars.root)

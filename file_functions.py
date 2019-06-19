@@ -33,22 +33,22 @@ def openNETCDF(filenames):
 #	gl_vars.data and gl_vars.messages need to have been initialized before function call.
 def getSelectedMessage(ind):
 	dimension_list = list(gl_vars.data[ind].coords.keys())
-	mess_ind = [[None, None] for i in dimension_list]
-	mess_ind_2 = [None for i in dimension_list]
+	mess_ind = dict()
+	mess_ind_2 = dict()
 	sel_message = "You have selected:\n"
 	j = 0
 	for x in dimension_list:
 		# ADD AN if TIME, cover to only date datetime[ns64] is quite ugly.
 		arr = [str(a) for a in gl_vars.data[ind].variables[x].values]
-		mess_ind[j][0] = arr.index(gl_vars.messages[j][0])
-		sel_message += x + ' ' + str(gl_vars.data[ind].variables[x].values[mess_ind[j][0]])
+		mess_ind[x] = [arr.index(gl_vars.messages[j][0])]
+		sel_message += x + ' ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][0]])
 		if (gl_vars.messages[j][1] is not None):
-			mess_ind[j][1] = arr.index(gl_vars.messages[j][1])
-			sel_message += ' : ' + str(gl_vars.data[ind].variables[x].values[mess_ind[j][1]])
-			mess_ind[j].sort()
-			mess_ind_2[j] = slice(mess_ind[j][0],mess_ind[j][1]+1)
+			mess_ind[x].append(arr.index(gl_vars.messages[j][1]))
+			sel_message += ' : ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][1]])
+			mess_ind[x].sort()
+			mess_ind_2[x] = slice(mess_ind[x][0],mess_ind[x][1]+1)
 		else:
-			mess_ind_2[j] = mess_ind[j][0]
+			mess_ind_2[x] = mess_ind[x][0]
 		sel_message += '\n'
 		j += 1
 	return sel_message, mess_ind_2
@@ -68,8 +68,10 @@ def getData(ind, org, *args):
 			output_message = getOutputMessage(ind, mess_ind_2,None)
 		else:
 			var_name = args[0]
-			ord_arr = [dimension_list.index(a) for a in gl_vars.data[ind].variables[var_name].dims]
-			out_ind = tuple([mess_ind_2[a] for a in ord_arr])
+			#ord_arr = [dimension_list.index(a) for a in gl_vars.data[ind].variables[var_name].dims]
+			#out_ind = tuple([mess_ind_2[a] for a in ord_arr])
+			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[var_name].dims])
+
 			output_message = gl_vars.data[ind].variables[var_name].values[out_ind]
 	elif(org == 1):
 		output_message = getOutputMessage(ind, mess_ind_2, args[0])
@@ -93,8 +95,10 @@ def getOutputMessage(ind, mess_ind_2, org):
 		else:
 			test_array = np.array(org[x])
 		if(gl_vars.outVar[j]):
-			ord_arr = [dimension_list.index(a) for a in gl_vars.data[ind].variables[x].dims]
-			out_ind = tuple([mess_ind_2[a] for a in ord_arr])
+			#ord_arr = [dimension_list.index(a) for a in gl_vars.data[ind].variables[x].dims]
+			#out_ind = tuple([mess_ind_2[a] for a in ord_arr])
+
+			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[x].dims])
 			temp = test_array[out_ind]
 			output_message += x + '\n' + str(temp) +'\nMean: '+str(np.nanmean(temp))+' Standard Deviation: '+str(np.nanstd(temp))+'\n'
 		j += 1
