@@ -54,14 +54,17 @@ def getMultiSets(filenames):
 	#	var (The text Entry widget) should have a valid string.
 	def combine_files():
 		nonlocal filenames2
-		indxs = [a for a in range(len(filenames)) if chk_vars[filenames[a]].get() == 1]
+		indxs = [a for a in filenames if chk_vars[a].get() == 1]
 		data_mod = [gl_vars.data[a] for a in indxs]
 		merged = xr.merge(data_mod)
-		filenames2 = [filenames[a] for a in range(len(filenames)) if a not in indxs]
-		copy = [gl_vars.data[a] for a in range(len(gl_vars.data)) if a not in indxs]
-		copy.append(merged)
+		filenames2 = [a for a in filenames if a not in indxs]
+		copy = dict()
+		for a in filenames2:
+			copy[a] = gl_vars.data[a]
+		newName =var.get()
+		copy[newName] = merged
 		gl_vars.data = copy
-		filenames2.append(var.get())
+		filenames2.append(newName)
 	# POST-CONDITION
 	#	gl_vars.data and filenames2 now contain a smaller list after combining the selected Datasets.
 
@@ -107,9 +110,9 @@ def getMultiSets(filenames):
 		gl_vars.root.config(menu=menu)
 		addPages(filenames2)
 		fillPages()
-		for i in gl_vars.chk_var_list1:
-			for j in i:
-				j.trace("w",trig)
+		for i in gl_vars.chk_var_list1.keys():
+			for j in gl_vars.chk_var_list1[i].keys():
+				gl_vars.chk_var_list1[i][j].trace("w",trig)
 	# POST-CONDITION
 	#	Initializes the first steps towards creating the GUI. Destroys the previous widget setup and creates a notebook, with each page corresponding to the datasets in gl_var.data after combining.
 	# 	Function calls to create and add the pages are done and one set of IntVars (correspoding to the radio buttons) are bound to the function trigger.
@@ -131,9 +134,10 @@ def getMultiSets(filenames):
 #	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
 #	gl_vars.nb must be initialised before the function call.
 def addPages(filenames):
-	gl_vars.pages = [ttk.Frame(gl_vars.nb) for i in range(len(filenames))]
-	for i in range(len(filenames)):
-		gl_vars.nb.add(gl_vars.pages[i], text = filenames[i])
+	gl_vars.pages = dict()
+	for i in filenames:
+		gl_vars.pages[i] = ttk.Frame(gl_vars.nb)
+		gl_vars.nb.add(gl_vars.pages[i], text = i)
 	gl_vars.nb.grid(row = 0, column = 0, columnspan=9, sticky = tk.E + tk.W, padx = 5)
 # POST-CONDITION
 #	gl_vars.pages is initialised with Tkinter frame widgets, which are then added to the tkinter Notebook. 
@@ -141,13 +145,14 @@ def addPages(filenames):
 # PRE-CONDITION
 #	gl_vars.chk_var_list1 and gl_vars.spn_box_list need to be initialised before function call.
 def trig(event,b,c):
-	dats = event.split('_')
-	i = int(dats[2])
-	n1 = int(dats[1])
+	dats = event.split('$')		#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	n1 = dats[2]
+	i = dats[1]
+	row_num = int(dats[3])
 	if (gl_vars.chk_var_list1[i][n1].get() == 0):
-		gl_vars.spn_box_list[i][2*n1+1].grid_forget()
+		gl_vars.spn_box_list[i][n1][1].grid_forget()   #***# This requires changes
 	else:
-		gl_vars.spn_box_list[i][2*n1+1].grid(row = 5+n1, column = 2)
+		gl_vars.spn_box_list[i][n1][1].grid(row = row_num, column = 2)
 # POST-CONDITION
 #	The specific radio button toggles the visibility of the spinbox.
 	
@@ -156,16 +161,16 @@ def trig(event,b,c):
 def fillPages():
 	xr_dataSet = gl_vars.data
 	no_of_pages = len(gl_vars.pages)
-	gl_vars.chk_var_list1 = [None for x in range(no_of_pages)]
-	gl_vars.chk_var_list2 = [None for x in range(no_of_pages)]
-	gl_vars.chk_var_list3 = [None for x in range(no_of_pages)]
-	gl_vars.spn_box_list = [None for x in range(no_of_pages)]
-	for i in range(no_of_pages):
+	gl_vars.chk_var_list1 = dict()
+	gl_vars.chk_var_list2 = dict()
+	gl_vars.chk_var_list3 = dict()
+	gl_vars.spn_box_list = dict()
+	for i in gl_vars.pages.keys():
 		dimension_list = list(xr_dataSet[i].coords.keys())
 		variable_list = list(xr_dataSet[i].data_vars.keys())
-		gl_vars.chk_var_list1[i] = [None for k in range(len(dimension_list))]
-		gl_vars.chk_var_list2[i] = [None for k in range(len(variable_list))]
-		gl_vars.spn_box_list[i] = [tk.Spinbox(gl_vars.pages[i]) for b in range(len(dimension_list)*2)]
+		gl_vars.chk_var_list1[i] = dict()
+		gl_vars.chk_var_list2[i] = dict()
+		gl_vars.spn_box_list[i] = dict()
 		n1 = 0
 		gl_vars.chk_var_list3[i] = tk.IntVar(gl_vars.pages[i])
 		tk.Checkbutton(gl_vars.pages[i], text = "Use SHAPEFILE", variable = gl_vars.chk_var_list3[i]).grid(row = n1, column = 10)
@@ -174,13 +179,11 @@ def fillPages():
 			createSelBox(j, n1, i, list(xr_dataSet[i][j].values))
 			n1 += 1
 		n1+=5
-		#gl_vars.selBox = [createOPBox("Selection", i, n1) for l in range(no_of_pages)]
 		n2 = 1
 		tk.Label(gl_vars.pages[i], text="Choose output variables:").grid(row = n1+1, column = 0)
 		for k in variable_list:
 			createCheckBox(k, i, n1+1, n2)
 			n2 += 1
-		#gl_vars.opBox = [createOPBox("Output data", i, n1+2) for l in range(no_of_pages)]
 	tk.Label(gl_vars.root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
 	gl_vars.selBox = tk.Text(gl_vars.root, height = 4, width = 5)
 	gl_vars.selBox.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
@@ -188,8 +191,6 @@ def fillPages():
 	gl_vars.opBox = tk.Text(gl_vars.root, height = 4, width = 5)
 	gl_vars.opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
 	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
-	#tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 3, sticky = tk.E + tk.W, pady = 5)
-	#tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 5, sticky = tk.E + tk.W, pady = 5)
 	tk.Button(gl_vars.root, text = 'Close', command = gl_vars.root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
 	gl_vars.root.grid_columnconfigure(0, minsize=30)
 	gl_vars.root.grid_columnconfigure(1, minsize=150)
@@ -219,10 +220,10 @@ def fillPages():
 #	gl_vars.pages and gl_vars.chk_var_list1 should have been initialised before function call.
 def createSelRow(name, num, ind):
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
-	gl_vars.chk_var_list1[ind][num] = tk.IntVar(gl_vars.pages[ind], name = "var_"+str(num)+ "_" + str(ind))
-	r1 = tk.Radiobutton(gl_vars.pages[ind], text = 'Single', variable = gl_vars.chk_var_list1[ind][num], value = 0)
+	gl_vars.chk_var_list1[ind][name] = tk.IntVar(gl_vars.pages[ind], name = "var$"+ind+ "$" + name + '$' + str(num+5))
+	r1 = tk.Radiobutton(gl_vars.pages[ind], text = 'Single', variable = gl_vars.chk_var_list1[ind][name], value = 0)
 	r1.grid(row = num, column = 1)
-	r2 = tk.Radiobutton(gl_vars.pages[ind], text = 'Range (Inclusive)', variable = gl_vars.chk_var_list1[ind][num], value = 1)
+	r2 = tk.Radiobutton(gl_vars.pages[ind], text = 'Range (Inclusive)', variable = gl_vars.chk_var_list1[ind][name], value = 1)
 	r2.grid(row = num, column = 2)
 # POST-CONDITION
 #	Each call of the function generates one label, and two radio buttons which are placed and then deselected.
@@ -237,28 +238,12 @@ def createSelRow(name, num, ind):
 def createSelBox(name, num, ind, value_list):
 	value_list.sort()
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num+5, column = 0)
-	gl_vars.spn_box_list[ind][2*num].configure(values=value_list)
-	gl_vars.spn_box_list[ind][2*num].grid(row = num+5, column = 1)
-	gl_vars.spn_box_list[ind][2*num+1].configure(values=value_list)
+	gl_vars.spn_box_list[ind][name] = [tk.Spinbox(gl_vars.pages[ind]), tk.Spinbox(gl_vars.pages[ind])]
+	gl_vars.spn_box_list[ind][name][0].configure(values=value_list)
+	gl_vars.spn_box_list[ind][name][0].grid(row = num+5, column = 1)
+	gl_vars.spn_box_list[ind][name][1].configure(values=value_list)
 # POST-CONDITION
 #	Each function call creates and places one label and creates two spin boxes with the given range for the given variable.
-
-# PRE-CONDITION
-#	name: The name of the textbox in question as a string.
-#	ind: The index of the page (.nc file) as an integer.
-#	num: an integer denoting the row number.
-#	gl_vars.pages needs to have been initialised before function call.
-# def createOPBox(name, ind, num):
-# 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
-# 	textBox = tk.Text(gl_vars.pages[ind], height = 4)
-# 	textBox.grid(row = num, column = 1, columnspan = 6)
-# 	scroll = tk.Scrollbar(gl_vars.pages[ind])
-# 	scroll.grid(row = num,column = 6)
-# 	scroll.config(command=textBox.yview)
-# 	textBox.config(yscrollcommand=scroll.set)
-# 	return textBox
-# POST-CONDITION
-#	Each function call creates and places a label (of the given name) along with a textbox and scrollbar. Thetkinter instance of the Text widget is returned ny the function.
 
 # PRE-CONDITION
 #	data_var: This is a string with the name of the data variable in question.
@@ -267,25 +252,34 @@ def createSelBox(name, num, ind, value_list):
 #	num2: an integer denoting the column number
 #	gl_vars.chk_var_list2 and gl_vars.pages need to have been initialised before function call.
 def createCheckBox(data_var, ind, num, num2):
-	gl_vars.chk_var_list2[ind][num2-1] = tk.IntVar(gl_vars.pages[ind], name = "var_"+data_var+"_"+str(ind)+"_"+str(num2-1))
-	tk.Checkbutton(gl_vars.pages[ind], text = data_var, variable = gl_vars.chk_var_list2[ind][num2-1]).grid(row = num, column = num2)
+	gl_vars.chk_var_list2[ind][data_var] = tk.IntVar(gl_vars.pages[ind], name = "var$"+data_var+"$"+ind+"$"+str(num2-1))
+	tk.Checkbutton(gl_vars.pages[ind], text = data_var, variable = gl_vars.chk_var_list2[ind][data_var]).grid(row = num, column = num2)
 # POST-CONDITION
 #	Each function call creates and places a checkbox in the given page, at the given position, with the appropriate label.
 #	gl_vars.chk_var_list2 is completely initialised with with named tkinter IntVar. Each associated with a checkbox.
 def getIndexes():
-	i = gl_vars.nb.index("current")
-	rangeVar = [a.get() for a in gl_vars.chk_var_list1[i]]
-	gl_vars.messages = [[None, None] for a in range(len(rangeVar))]
-	for x in range(len(rangeVar)):
-		gl_vars.messages[x][0] = gl_vars.spn_box_list[i][x*2].get()
+	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+	rangeVar = dict()
+	for a in gl_vars.chk_var_list1[i].keys():
+		rangeVar[a] = gl_vars.chk_var_list1[i][a].get()
+	gl_vars.messages = dict()
+	#***************************************SPINBOX UPDATION REQUIRED
+	dimension_list = list(gl_vars.data[i].coords.keys())
+	for x in dimension_list:
+		gl_vars.messages[x] = [gl_vars.spn_box_list[i][x][0].get()]
 		if(rangeVar[x]):
-			gl_vars.messages[x][1] = gl_vars.spn_box_list[i][x*2+1].get()
-	gl_vars.outVar = [a.get() for a in gl_vars.chk_var_list2[i]]
+			gl_vars.messages[x].append(gl_vars.spn_box_list[i][x][1].get())
+		else:
+			gl_vars.messages[x].append(None)
+	gl_vars.outVar = dict()
+	for a in gl_vars.chk_var_list2[i].keys():
+		gl_vars.outVar[a] = gl_vars.chk_var_list2[i][a].get()
+
 # PRE-CONDITION
 #	gl_vars.nb, gl_vars.spn_box_list, gl_vars.chk_var_list1, and gl_vars.chk_var_list3 need to have been initialised.
 #	Whether gl_vars.output is None or not, will affect the function output. 
 def retrieveData():
-	i = gl_vars.nb.index("current")
+	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	getIndexes()
 	if (gl_vars.chk_var_list3[i].get() == 1 and gl_vars.output is None):
 		openPlotWindow(2)
@@ -296,7 +290,7 @@ def retrieveData():
 		gl_vars.output = None
 	else:
 		sel_message, output_message = ffunc.getData(i, 0, None)
-	printMessages(output_message,sel_message, i)
+	printMessages(output_message,sel_message)
 # POST-CONDITION
 #	gl_vars.messages is initialised with the contents of the spinboxes (i.e. the data ranges selected by the user)
 #	gl_vars.outVar is initialised with the state of the checkboxes at the time of button pressing.
@@ -306,7 +300,7 @@ def retrieveData():
 #	o_message: This is a string containing the output data.
 #	s_message: This is a string which lists out the selected variable ranges. 
 #	gl_vars.selBox and gl_vars.opBox needs to have been initialised befire function call.
-def printMessages(o_message, s_message, ind):
+def printMessages(o_message, s_message):
 	gl_vars.selBox.delete(1.0,tk.END)
 	gl_vars.selBox.insert(tk.INSERT, s_message)
 	gl_vars.opBox.delete(1.0,tk.END)
@@ -325,7 +319,7 @@ def plotWindow():
 #	org: An integer value which selects the mode. 0 corresponds to plotting by a map, 1 corresponds to using a shapefile to export to csv and 2 corresponds to using a shapefile and biunding ranges to output in the GUI.
 #	gl_vars.nb, gl_vars.data, and gl_vars.root need to have been initialised before function call.
 def openPlotWindow(org):
-	i = gl_vars.nb.index("current")
+	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	window = tk.Toplevel(gl_vars.root)
 	var2 = tk.IntVar(window)
 	varn = tk.StringVar(window)
@@ -435,7 +429,7 @@ def openPlotWindow(org):
 # PRE-CONDITION
 #	gl_vars.nb, gl_vars.data, and gl_vars.root need to be initialised.
 def exportToCSV():
-	i = gl_vars.nb.index("current")
+	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	var_list = list(gl_vars.data[i].data_vars.keys())
 	window = tk.Toplevel(gl_vars.root)
 	tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)

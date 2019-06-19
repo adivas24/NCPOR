@@ -3,7 +3,6 @@
 3. Give user option to choose projection parameters, colors, etc.
 4. Work on the README
 
-5. Use dictionaries instead of arrays everywhere?
 
 * Individual TODO lists are on each file.
 

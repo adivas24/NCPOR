@@ -24,36 +24,13 @@ from affine import Affine
 # PRE-CONDITION
 #	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
 def openNETCDF(filenames):
-	return [xr.open_dataset(i) for i in filenames]
+	out = dict()
+	for i in filenames:
+		i_mod = i.split('/')[-1]
+		out[i_mod] = xr.open_dataset(i)
+	return out
 # POST-CONDITION
 #	return value: an array containing xarray DataFrames, each corresponding to one NETCDF file.
-
-# PRE-CONDITION
-#	ind: The index of the page currently active, from which data is to be retrieved.
-#	gl_vars.data and gl_vars.messages need to have been initialized before function call.
-def getSelectedMessage(ind):
-	dimension_list = list(gl_vars.data[ind].coords.keys())
-	mess_ind = dict()
-	mess_ind_2 = dict()
-	sel_message = "You have selected:\n"
-	j = 0
-	for x in dimension_list:
-		# ADD AN if TIME, cover to only date datetime[ns64] is quite ugly.
-		arr = [str(a) for a in gl_vars.data[ind].variables[x].values]
-		mess_ind[x] = [arr.index(gl_vars.messages[j][0])]
-		sel_message += x + ' ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][0]])
-		if (gl_vars.messages[j][1] is not None):
-			mess_ind[x].append(arr.index(gl_vars.messages[j][1]))
-			sel_message += ' : ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][1]])
-			mess_ind[x].sort()
-			mess_ind_2[x] = slice(mess_ind[x][0],mess_ind[x][1]+1)
-		else:
-			mess_ind_2[x] = mess_ind[x][0]
-		sel_message += '\n'
-		j += 1
-	return sel_message, mess_ind_2
-# POST-CONDITION
-#	return value: a 2-tuple containing a string with a message containing the data ranges selected and a list containing the actual ranges (as slices)/values (as integers) that can be fed as array indices to retrieve the data.
 
 # PRE-CONDITION
 #	ind: the index of the current page.
@@ -65,13 +42,10 @@ def getData(ind, org, *args):
 	sel_message, mess_ind_2 = getSelectedMessage(ind)
 	if (org == 0):
 		if (args[0] is None):
-			output_message = getOutputMessage(ind, mess_ind_2,None)
+			output_message = getOutputMessage(ind, mess_ind_2, args[0])
 		else:
 			var_name = args[0]
-			#ord_arr = [dimension_list.index(a) for a in gl_vars.data[ind].variables[var_name].dims]
-			#out_ind = tuple([mess_ind_2[a] for a in ord_arr])
 			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[var_name].dims])
-
 			output_message = gl_vars.data[ind].variables[var_name].values[out_ind]
 	elif(org == 1):
 		output_message = getOutputMessage(ind, mess_ind_2, args[0])
@@ -80,13 +54,37 @@ def getData(ind, org, *args):
 #	return value: a 2-tuple. The first element is a string containing the message with selected data ranges. The second is a string containing the output ranges, except when a single variable name is provided in mode 1, in that case, it returns the entire xarray DataArray.
 
 # PRE-CONDITION
+#	ind: The index of the page currently active, from which data is to be retrieved.
+#	gl_vars.data and gl_vars.messages need to have been initialized before function call.
+def getSelectedMessage(ind):
+	dimension_list = list(gl_vars.data[ind].coords.keys())
+	mess_ind = dict()
+	mess_ind_2 = dict()
+	sel_message = "You have selected:\n"
+	for x in dimension_list:
+		# ADD AN if TIME, cover to only date datetime[ns64] is quite ugly.
+		arr = [str(a) for a in gl_vars.data[ind].variables[x].values]
+		mess_ind[x] = [arr.index(gl_vars.messages[x][0])]
+		sel_message += x + ' ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][0]])
+		if (gl_vars.messages[x][1] is not None):
+			mess_ind[x].append(arr.index(gl_vars.messages[x][1]))
+			sel_message += ' : ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][1]])
+			mess_ind[x].sort()
+			mess_ind_2[x] = slice(mess_ind[x][0],mess_ind[x][1]+1)
+		else:
+			mess_ind_2[x] = mess_ind[x][0]
+		sel_message += '\n'
+	return sel_message, mess_ind_2
+# POST-CONDITION
+#	return value: a 2-tuple containing a string with a message containing the data ranges selected and a list containing the actual ranges (as slices)/values (as integers) that can be fed as array indices to retrieve the data.
+
+# PRE-CONDITION
 #	ind: the index of the current page
 #	mess_ind_2: A list containing the output ranges, either as values (integers) or slices.
 #	org: specifies the mode of operation. If None, we use all the data. Otherwise, it is expected that org contains the masked data, in the form of a list.
 def getOutputMessage(ind, mess_ind_2, org):
 	variable_list = list(gl_vars.data[ind].data_vars.keys())
 	dimension_list = list(gl_vars.data[ind].coords.keys())
-	j = 0 
 	ord_arr = None
 	output_message = ""
 	for x in variable_list:
@@ -94,14 +92,13 @@ def getOutputMessage(ind, mess_ind_2, org):
 			test_array = gl_vars.data[ind].variables[x].values
 		else:
 			test_array = np.array(org[x])
-		if(gl_vars.outVar[j]):
+		if(gl_vars.outVar[x]):
 			#ord_arr = [dimension_list.index(a) for a in gl_vars.data[ind].variables[x].dims]
 			#out_ind = tuple([mess_ind_2[a] for a in ord_arr])
 
 			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[x].dims])
 			temp = test_array[out_ind]
 			output_message += x + '\n' + str(temp) +'\nMean: '+str(np.nanmean(temp))+' Standard Deviation: '+str(np.nanstd(temp))+'\n'
-		j += 1
 	return output_message
 # POST-CONDITION
 #	return value: A string containing the output data, ready for display, along with the mean and standard deviations.
