@@ -12,6 +12,8 @@ import cartopy
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import matplotlib as mpl
+import matplotlib.cm as cm
 # Used for plotting
 
 import fiona
@@ -137,3 +139,29 @@ def animation(ind,var_name, time_index, shpfile, plac_ind, proj_string):
 
 	anim.save('air_temp.gif', writer='imagemagick')
 # 	
+
+def vectorMap(ind,var_name, time_index, shpfile, plac_ind, proj_string):
+	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+
+	fig = plt.figure()
+	ax = plt.axes(projection = pc)
+	ax.coastlines()
+	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', 0, shpfile, plac_ind)
+	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', 0, shpfile, plac_ind)
+	lon_arr = np.sort(((np.array(gl_vars.data[ind].coords[lon_var]) + 180) % 360) -180)
+	lat_arr = np.array(gl_vars.data[ind].coords[lat_var])
+	u_arr = np.array(xds1)
+	v_arr = np.array(xds2)
+	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+	#norm = mpl.colors.Normalize()
+	#colormap = cm.inferno
+	#color = colormap(norm(velocity))
+	#print(xds1.shape, xds2.shape, gl_vars.data[ind].coords[lon_var].shape, gl_vars.data[ind].coords[lat_var].shape)
+	#norm = mpl.colors.Normalize()
+	#norm.autoscale(velocity)
+	#com = cm.copper
+	#sm = cm.ScalarMappable(cmap=com, norm=norm)
+	#sm.set_array([])
+	plt.quiver(lon_arr,lat_arr,u_arr, v_arr,velocity, transform = pc, regrid_shape = 20)
+	plt.colorbar(orientation = 'horizontal')
+	plt.show()

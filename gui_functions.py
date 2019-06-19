@@ -356,7 +356,13 @@ def openPlotWindow(org):
 				var2.set(0)
 			else:
 				shp = gpd.read_file(filename)
-				places = list(shp['NAME'])
+				#print(list(shp.columns))
+				# Searching in this above list and selecting the name variable seems like a good idea.
+				try:
+					places = list(shp['NAME'])
+				except:
+					places = list(shp['ST_NAME'])
+				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
 				places2 = [i for i in places if i is not None]
 				places2.append("ALL")
 				tk.Label(window, text=filename).grid(row = 4, column = 1)
@@ -377,7 +383,9 @@ def openPlotWindow(org):
 		if(var2.get() == 1 and var3.get() != "ALL"):
 			plac_ind = places.index(var3.get())
 		#pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
-		pfunc.animation(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+		#pfunc.animation(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+		pfunc.vectorMap(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+
 	# POST-CONDITION
 	#	Appropriate map is generated through a function call, depending on whether SHPAPEFILE has been used or not.
 
