@@ -95,6 +95,12 @@ def getMultiSets(filenames):
 		for a in chk_arr:
 			a.destroy()
 		gl_vars.nb = ttk.Notebook(gl_vars.root)
+		menu = tk.Menu(gl_vars.root)
+		menu.add_command(label = "Plot", command = plotWindow)
+		menu.add_command(label = "Export", command = exportToCSV)
+		menu.add_command(label = "Statistics", command = exportToCSV)
+
+		gl_vars.root.config(menu=menu)
 		addPages(filenames2)
 		fillPages()
 		for i in gl_vars.chk_var_list1:
@@ -178,8 +184,8 @@ def fillPages():
 	gl_vars.opBox = tk.Text(gl_vars.root, height = 4, width = 5)
 	gl_vars.opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
 	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
-	tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 3, sticky = tk.E + tk.W, pady = 5)
-	tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 5, sticky = tk.E + tk.W, pady = 5)
+	#tk.Button(gl_vars.root, text = 'Plot', command = plotWindow).grid(row = 100, column = 3, sticky = tk.E + tk.W, pady = 5)
+	#tk.Button(gl_vars.root, text = 'Export to CSV', command = exportToCSV).grid(row = 100, column = 5, sticky = tk.E + tk.W, pady = 5)
 	tk.Button(gl_vars.root, text = 'Close', command = gl_vars.root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
 	gl_vars.root.grid_columnconfigure(0, minsize=30)
 	gl_vars.root.grid_columnconfigure(1, minsize=150)
