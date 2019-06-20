@@ -153,15 +153,6 @@ def vectorMap(ind,var_name, time_index, shpfile, plac_ind, proj_string):
 	u_arr = np.array(xds1)
 	v_arr = np.array(xds2)
 	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
-	#norm = mpl.colors.Normalize()
-	#colormap = cm.inferno
-	#color = colormap(norm(velocity))
-	#print(xds1.shape, xds2.shape, gl_vars.data[ind].coords[lon_var].shape, gl_vars.data[ind].coords[lat_var].shape)
-	#norm = mpl.colors.Normalize()
-	#norm.autoscale(velocity)
-	#com = cm.copper
-	#sm = cm.ScalarMappable(cmap=com, norm=norm)
-	#sm.set_array([])
-	plt.quiver(lon_arr,lat_arr,u_arr, v_arr,velocity, transform = pc, regrid_shape = 20)
+	plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 20)
 	plt.colorbar(orientation = 'horizontal')
 	plt.show()

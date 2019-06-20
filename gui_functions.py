@@ -23,6 +23,7 @@ from datetime import datetime
 # TODO	Go through and clean up code.
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
+#THE ENTIRE PLOT WINDOW PART NEEDS RESTRUCTURING
 
 # PRE-CONDITION
 #	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
@@ -205,10 +206,6 @@ def fillPages():
 	gl_vars.root.grid_rowconfigure(91, minsize=20)
 	gl_vars.root.grid_rowconfigure(92, minsize=20)
 	gl_vars.root.grid_rowconfigure(93, minsize=20)
-
-
-
-
 # POST-CONDITION
 #	Each page is filled with Radio-buttons, Spinboxes, Checkboxes, Buttons and appropriate labels.
 #	The global variables, chk_var_list1, chk_var_list2, chk_var_list3, and spn_box_list are initialised. 
@@ -263,7 +260,6 @@ def getIndexes():
 	for a in gl_vars.chk_var_list1[i].keys():
 		rangeVar[a] = gl_vars.chk_var_list1[i][a].get()
 	gl_vars.messages = dict()
-	#***************************************SPINBOX UPDATION REQUIRED
 	dimension_list = list(gl_vars.data[i].coords.keys())
 	for x in dimension_list:
 		gl_vars.messages[x] = [gl_vars.spn_box_list[i][x][0].get()]
@@ -308,49 +304,180 @@ def printMessages(o_message, s_message):
 # POST-CONDITION
 #	messages are printed in the appropriate Text boxes.
 
-# PRE-CONDITION
-#	No prereqs. Dummy call as argument needed to be passed.
-def plotWindow():
-	openPlotWindow(0)
-# POST-CONDITION
-#	openPlotWindow is called with appropriate argument.
+# # PRE-CONDITION
+# #	No prereqs. Dummy call as argument needed to be passed.
+# def plotWindow():
+# 	openPlotWindow(0)
+# # POST-CONDITION
+# #	openPlotWindow is called with appropriate argument.
 
-# PRE-CONDITION
-#	org: An integer value which selects the mode. 0 corresponds to plotting by a map, 1 corresponds to using a shapefile to export to csv and 2 corresponds to using a shapefile and biunding ranges to output in the GUI.
-#	gl_vars.nb, gl_vars.data, and gl_vars.root need to have been initialised before function call.
-def openPlotWindow(org):
+# # PRE-CONDITION
+# #	org: An integer value which selects the mode. 0 corresponds to plotting by a map, 1 corresponds to using a shapefile to export to csv and 2 corresponds to using a shapefile and biunding ranges to output in the GUI.
+# #	gl_vars.nb, gl_vars.data, and gl_vars.root need to have been initialised before function call.
+# def openPlotWindow(org):
+# 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+# 	window = tk.Toplevel(gl_vars.root)
+# 	var2 = tk.IntVar(window)
+# 	varn = tk.StringVar(window)
+# 	varn.set("PlateCarree")
+# 	if (org != 2):
+# 		var_list = list(gl_vars.data[i].data_vars.keys())
+# 		time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
+# 		tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
+# 		var = tk.StringVar(window)
+# 		var.set(var_list[0])
+# 		tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
+# 		tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
+# 		spin = tk.Spinbox(window, values = time_range)
+# 		spin.grid(row = 2, column = 1)
+# 		if(org != 1):
+# 			tk.Label(window, text = "Select projection: ").grid(row = 3, column = 0)
+# 			proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
+# 			ttk.Combobox(window, textvariable = varn, values = proj_list).grid(row = 3, column = 1)
+# 		tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 4, column = 0)
+# 	b1 = tk.Button(window, text = 'Confirm')
+# 	b1.grid(row = 10, column = 1)
+# 	var3 = tk.StringVar(window)
+# 	var3.set("ALL")
+# 	filename = None
+# 	plac_ind = None
+# 	places = []
+# 	output = None
+
+# 	# PRE-CONDITION
+# 	#	Function is button triggered. Arguments are required dummies.
+# 	#	gl_vars.root needs to have been initialised at the start.
+# 	def shapeSelect(event, b, c):
+# 		nonlocal places, filename, var2
+# 		if (var2.get() == 1 or org == 2):
+# 			filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
+# 			if (filename == ""):
+# 				filename = None
+# 				var2.set(0)
+# 			else:
+# 				shp = gpd.read_file(filename)
+# 				#print(list(shp.columns))
+# 				# Searching in this above list and selecting the name variable seems like a good idea.
+# 				try:
+# 					places = list(shp['NAME'])
+# 				except:
+# 					places = list(shp['ST_NAME'])
+# 				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
+# 				places2 = [i for i in places if i is not None]
+# 				places2.append("ALL")
+# 				tk.Label(window, text=filename).grid(row = 4, column = 1)
+# 				places2.sort()
+# 				ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 5, column = 1)
+# 		if (org == 2):
+# 			nonlocal b1
+# 			b1.config(command = shapeData)
+# 	# POST-CONDITION
+# 	#	This creates a pop-up window allowing the user to select a shape file and a place from the SHAPEFILE storing thrm in local function variables.
+# 	#	In mode 2, it also changes the button functionality for futher operation.
+	
+# 	# PRE-CONDITION
+# 	#	places and filename need to be initialised to appropriate values before function call.
+# 	def plotMap():
+# 		proj_string = varn.get()
+# 		nonlocal plac_ind
+# 		if(var2.get() == 1 and var3.get() != "ALL"):
+# 			plac_ind = places.index(var3.get())
+# 		#pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+# 		#pfunc.animation(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+# 		pfunc.vectorMap(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
+
+# 	# POST-CONDITION
+# 	#	Appropriate map is generated through a function call, depending on whether SHPAPEFILE has been used or not.
+
+# 	# PRE-CONDITION
+# 	#	places filename, and window should be initialised before function call.
+# 	def shapeData():
+# 		nonlocal window
+# 		if(var3.get() == "ALL"):
+# 			plac_ind = None
+# 		else:
+# 			plac_ind = places.index(var3.get())
+# 		if (org != 2):
+# 			gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)[0]
+# 		else:
+# 			gl_vars.output = ffunc.getShapeData(i,None, None, filename, plac_ind)[0]
+# 			window2 = tk.Toplevel(gl_vars.root)
+# 			tk.Label(window2, text = "Press RetrieveData again to display the chosen shapefile masked data.").grid(row = 0, column = 0)
+# 		if(org == 1):
+# 			window2 = tk.Toplevel(gl_vars.root)
+# 			tk.Label(window2, text = "Press Save again to save the chosen shapefile masked data.").grid(row = 0, column = 0)
+# 		window.destroy()
+# 	# POST-CONDITION
+# 	#	Function to mask data is called and gl_vars.output is initialised and can now be accesed via button press.
+
+# 	var2.trace("w", shapeSelect)
+# 	if(org == 0):
+# 		b1.config(command = plotMap)
+# 	elif(org == 1):
+# 		var2.set(1)
+# 		b1.config(command = shapeData)
+# 	elif(org == 2):
+# 		shapeSelect(None,None,None)
+# # POST-CONDITION
+# #	Creates a pop-up window that allows the user to select a SHAPEFILE and subsequently a place for masking purposes.
+# #	Additional widgets are used in some cases. More detail can be gathered from the nested functions.
+
+# # PRE-CONDITION
+# #	gl_vars.nb, gl_vars.data, and gl_vars.root need to be initialised.
+# def exportToCSV():
+# 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+# 	var_list = list(gl_vars.data[i].data_vars.keys())
+# 	window = tk.Toplevel(gl_vars.root)
+# 	tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
+# 	var = tk.StringVar(window)
+# 	vr2 = tk.IntVar(window)
+# 	var.set(var_list[0])
+# 	tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
+# 	tk.Checkbutton(window, text = "Use SHAPEFILE?", variable = vr2).grid(row = 2, column = 1)
+	
+# 	# PRE-CONDITION
+# 	#	vr2, window and var need to be initialised prior to function call.
+# 	def saveCSV():
+# 		if (vr2.get() == 0):
+# 			getIndexes()
+# 			a,b = ffunc.getData(i, 0, var.get())
+# 			c=np.resize(b,[b.shape[0],b.shape[1]*b.shape[2]])
+# 		else: 
+# 			a = ""
+# 			if(gl_vars.output is not None):
+# 				c = gl_vars.output.values
+# 				gl_vars.output = None
+# 			else:
+# 				openPlotWindow(1)
+# 				return
+# 		tk.Label(window, text = a).grid(row = 2, column = 0, columnspan = 2)
+# 		pd.DataFrame(c).to_csv(asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]), header = None, index = None, na_rep = "NaN")
+# 		tk.Label(window, text = "Done").grid(row = 3, column = 1, columnspan = 2)
+# 	# POST-CONDITION
+# 	#	File is saved in csv format, after user-has been prompted for a name.
+
+# 	tk.Button(window, text = 'Save', command = saveCSV).grid(row = 10, column = 1)
+# # POST-CONDITION
+# #	A pop-up window for CSV saving is created, with the option of filtering using a shapefile.
+# #	A button is created and placed, which can be used to save the file.\
+
+
+def openWindow(org):
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	window = tk.Toplevel(gl_vars.root)
-	var2 = tk.IntVar(window)
-	varn = tk.StringVar(window)
-	varn.set("PlateCarree")
-	if (org != 2):
-		var_list = list(gl_vars.data[i].data_vars.keys())
-		time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
-		tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
-		var = tk.StringVar(window)
-		var.set(var_list[0])
-		tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
-		tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
-		spin = tk.Spinbox(window, values = time_range)
-		spin.grid(row = 2, column = 1)
-		if(org != 1):
-			tk.Label(window, text = "Select projection: ").grid(row = 3, column = 0)
-			proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
-			ttk.Combobox(window, textvariable = varn, values = proj_list).grid(row = 3, column = 1)
-		tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 4, column = 0)
+	var2 = tk.IntVar(window) # shape file toggle
+	var_list = list(gl_vars.data[i].data_vars.keys())
+	time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
 	b1 = tk.Button(window, text = 'Confirm')
-	b1.grid(row = 10, column = 1)
-	var3 = tk.StringVar(window)
+	b1.grid(row = 90, column = 1)
+	var3 = tk.StringVar(window) #shapefile location selector
 	var3.set("ALL")
 	filename = None
 	plac_ind = None
 	places = []
-	output = None
-
-	# PRE-CONDITION
-	#	Function is button triggered. Arguments are required dummies.
-	#	gl_vars.root needs to have been initialised at the start.
+	combo1 = ttk.Combobox(window, textvariable = var3)
+	la1 = tk.Label(window)
+	la2 = tk.Label(window, text= "Select place:")
 	def shapeSelect(event, b, c):
 		nonlocal places, filename, var2
 		if (var2.get() == 1 or org == 2):
@@ -367,100 +494,188 @@ def openPlotWindow(org):
 				except:
 					places = list(shp['ST_NAME'])
 				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
+				#[Need to modify the selector to allow multiple places to be selected.]
 				places2 = [i for i in places if i is not None]
 				places2.append("ALL")
-				tk.Label(window, text=filename).grid(row = 4, column = 1)
+				la1.config(text=filename.split('/')[-1])
+				la1.grid(row = 24, column = 0)
 				places2.sort()
-				ttk.Combobox(window, textvariable = var3, values = places2).grid(row = 5, column = 1)
-		if (org == 2):
-			nonlocal b1
-			b1.config(command = shapeData)
-	# POST-CONDITION
-	#	This creates a pop-up window allowing the user to select a shape file and a place from the SHAPEFILE storing thrm in local function variables.
-	#	In mode 2, it also changes the button functionality for futher operation.
-	
-	# PRE-CONDITION
-	#	places and filename need to be initialised to appropriate values before function call.
-	def plotMap():
-		proj_string = varn.get()
-		nonlocal plac_ind
-		if(var2.get() == 1 and var3.get() != "ALL"):
-			plac_ind = places.index(var3.get())
-		#pfunc.plotMapShape(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
-		#pfunc.animation(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
-		pfunc.vectorMap(i,var.get(), time_range.index(spin.get()), filename, plac_ind, proj_string)
-
-	# POST-CONDITION
-	#	Appropriate map is generated through a function call, depending on whether SHPAPEFILE has been used or not.
-
-	# PRE-CONDITION
-	#	places filename, and window should be initialised before function call.
-	def shapeData():
-		nonlocal window
-		if(var3.get() == "ALL"):
+				la2.grid(row = 25, column = 0)
+				combo1.config(values = places2)
+				combo1.grid(row = 25, column = 1)
+		else:
+			filename = None
 			plac_ind = None
-		else:
-			plac_ind = places.index(var3.get())
-		if (org != 2):
-			gl_vars.output = ffunc.getShapeData(i,var.get(), time_range.index(spin.get()), filename, plac_ind)[0]
-		else:
-			gl_vars.output = ffunc.getShapeData(i,None, None, filename, plac_ind)[0]
-			window2 = tk.Toplevel(gl_vars.root)
-			tk.Label(window2, text = "Press RetrieveData again to display the chosen shapefile masked data.").grid(row = 0, column = 0)
-		if(org == 1):
-			window2 = tk.Toplevel(gl_vars.root)
-			tk.Label(window2, text = "Press Save again to save the chosen shapefile masked data.").grid(row = 0, column = 0)
-		window.destroy()
-	# POST-CONDITION
-	#	Function to mask data is called and gl_vars.output is initialised and can now be accesed via button press.
+
+			combo1.grid_forget()
+			l1.grid_forget()
+			l2.grid_forget()
+	output = None
+	if (org == 0):
+		#Map plot
+		var = tk.StringVar(window) # variable selector
+		var.set(var_list[0])
+		varn = tk.StringVar(window) # projection selector
+		varSpin1= tk.StringVar(window)
+		varSpin2 = tk.StringVar(window)
+		varn.set("PlateCarree")
+		tk.Label(window, text = "Select type graph:").grid(row = 1, column = 0)
+		varRadio = tk.IntVar(window)
+		tk.Radiobutton(window, text = 'Map plot (fixed time)', variable = varRadio, value = 0).grid(row = 2, column = 0)
+		tk.Radiobutton(window, text = 'Animated map', variable = varRadio, value = 1).grid(row = 3, column = 0)
+		tk.Radiobutton(window, text = 'Vector plot (if available)', variable = varRadio, value = 2).grid(row = 4, column = 0)
+		tk.Radiobutton(window, text = 'Animated vector plot', variable = varRadio, value = 3).grid(row = 5, column = 0)
+
+		proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
+		l1 =tk.Label(window, text = "Select variable: ")
+		l2 = tk.Label(window, text = "Select time: ")
+		l3 = tk.Label(window, text = "Select projection: ")
+		l4 = tk.Label(window, text = "Select time range: ")
+		om1 = tk.OptionMenu(window, var, *var_list)
+		sb1 = tk.Spinbox(window, values = time_range, textvariable = varSpin1)
+		sb2 = tk.Spinbox(window, values = time_range, textvariable = varSpin2)
+		cb1 = ttk.Combobox(window, textvariable = varn, values = proj_list)
+		chb1 = tk.Checkbutton(window, text = "Use SHP file", variable = var2)
+		def plotSelect(event, a, b):
+			nonlocal l1, l2, l3, l4, om1, sb1, sb2, cb1, chb1
+			org = varRadio.get()
+			if (org == 0):
+				l1.grid(row = 10, column = 0)
+				om1.grid(row = 10, column = 1)
+				l2.grid(row = 12, column = 0)
+				sb1.grid(row = 12, column = 1)
+				sb2.grid_forget()
+				l3.grid(row = 13, column = 0)
+				l4.grid_forget()
+				cb1.grid(row = 13, column = 1)
+				chb1.grid(row = 14, column = 0)
+			elif (org == 1):
+				l1.grid(row = 10, column = 0)
+				om1.grid(row = 10, column = 1)
+				l2.grid_forget()
+				l4.grid(row = 12, column = 0)
+				sb1.grid(row = 12, column = 1)
+				sb2.grid(row = 12, column = 2)
+				l3.grid(row = 13, column = 0)
+				cb1.grid(row = 13, column = 1)
+				chb1.grid(row = 14, column = 0)
+				# More options wrt the animation can be added here.
+			elif (org == 2):
+				l1.grid_forget()
+				om1.grid_forget()
+				l2.grid(row = 12, column = 0)
+				sb1.grid(row = 12, column = 1)
+				sb2.grid_forget()
+				l3.grid_forget()
+				cb1.grid_forget()
+				l4.grid_forget()
+				chb1.grid(row = 14, column = 0)
+				# add mods for color selection, maybe even make user-chosen projection style?
+			elif(org == 3):
+				l1.grid_forget()
+				om1.grid_forget()
+				l2.grid_forget()
+				l3.grid_forget()
+				cb1.grid_forget()
+				l4.grid(row = 12, column = 0)
+				sb1.grid(row = 12, column = 1)
+				sb2.grid(row = 12, column = 2)
+				chb1.grid(row = 14, column = 0)
+				# More option wrt animation to be added here.
+			b1.config(command = callPlotFunction)
+		
+
+		def callPlotFunction():
+			nonlocal plac_ind
+			var_name = var.get()
+			proj_string = varn.get()
+			t1 = time_range.index(varSpin1.get())
+			t2 = time_range.index(varSpin2.get())
+			if(var2.get() == 1 and var3.get() != "ALL"):
+				plac_ind = places.index(var3.get())
+			elif(var3.get() == "ALL"):
+				plac_ind = None
+			org = varRadio.get()
+			print(plac_ind)
+			if (org == 0):
+				pfunc.plotMapShape(i,var_name, t1, filename, plac_ind, proj_string)
+			elif (org == 1):
+				pfunc.animation(i,var_name,(t1,t2), filename, plac_ind, proj_string)
+			elif (org == 2):
+				pfunc.vectorMap(i,t1, filename, plac_ind, proj_string)
+			elif (org == 3):
+				pfunc.vectorAnim(i,(t1,t2),filename, plac_ind, proj_string)
+		
+		varRadio.trace("w", plotSelect)
+		varRadio.set(0)
+	
+	elif (org == 1):
+		#CSV selector
+		var = tk.StringVar(window)
+		var.set(var_list[0])
+		varSpin1 = tk.IntVar(window)
+		varBnd = tk.IntVar(window)
+		tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
+		tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
+		tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
+		tk.Spinbox(window, values = time_range, textvariable = varSpin1).grid(row = 2, column = 1)
+		tk.Label(window, text = "Bounds?").grid(row = 3, column = 0)
+		tk.Radiobutton(window, text = "Use bounds specified in previous window", variable = varBnd, value = 0).grid(row = 3, column = 1)
+		tk.Radiobutton(window, text = "Apply no bounds", variable = varBnd, value = 1).grid(row = 3, column = 2)
+		tk.Checkbutton(window, text = "Use SHP file", variable = var2).grid(row = 4, column = 0)
+
+		def saveCSV():
+			var_name = var.get()
+			t1 = time_range.index(varSpin1.get())
+			if(varBnd.get() == 0):
+				getIndexes()
+				data_arr = ffunc.getData(i,0,var_name)[1]
+				if (filename is not None):
+					temp, lon_var, lat_var, temp2 = ffunc.getShapeData(i, var_name, t1, filename, plac_ind)
+					out = ffunc.applyShape(data_arr, lat_var, lon_var, shpfile, plac_ind)
+				else:
+					out = data_arr
+			elif(varBnd.get() == 1):
+				if (filename is not None):
+					out = ffunc.getShapeData(i, var_name, t1, filename, plac_ind)
+				else:
+					out = gl_vars.data[i].data_vars[var_name][t1,:,:]
+
+			resized_array = np.resize(out, [out.shape[0], out.shape[1], out.shape[2]])
+
+			pd.DataFrame(resized_array).to_csv(asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]), header = None, index = None, na_rep = "NaN")
+			tk.Label(window, text = "Done").grid(row = 43, column = 1, columnspan = 2)
+		b1.config(command = saveCSV)
+	
+	elif (org == 2):
+		#Retrieve Data, but limited by shape
+		shapeSelect(None,None,None)
+		def printShapeData():
+			nonlocal window
+			masked_data = ffunc.getShapeData(i,None, None, filename, plac_ind)[0]
+			sel_message, output_message = ffunc.getData(i, 1, masked_data)
+			printMessages(output_message,sel_message)
+			window.destroy()
+		b1.config(command = printShapeData)
 
 	var2.trace("w", shapeSelect)
-	if(org == 0):
-		b1.config(command = plotMap)
-	elif(org == 1):
-		var2.set(1)
-		b1.config(command = shapeData)
-	elif(org == 2):
-		shapeSelect(None,None,None)
-# POST-CONDITION
-#	Creates a pop-up window that allows the user to select a SHAPEFILE and subsequently a place for masking purposes.
-#	Additional widgets are used in some cases. More detail can be gathered from the nested functions.
 
-# PRE-CONDITION
-#	gl_vars.nb, gl_vars.data, and gl_vars.root need to be initialised.
-def exportToCSV():
-	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
-	var_list = list(gl_vars.data[i].data_vars.keys())
-	window = tk.Toplevel(gl_vars.root)
-	tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
-	var = tk.StringVar(window)
-	vr2 = tk.IntVar(window)
-	var.set(var_list[0])
-	tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
-	tk.Checkbutton(window, text = "Use SHAPEFILE?", variable = vr2).grid(row = 2, column = 1)
-	
 	# PRE-CONDITION
-	#	vr2, window and var need to be initialised prior to function call.
-	def saveCSV():
-		if (vr2.get() == 0):
-			getIndexes()
-			a,b = ffunc.getData(i, 0, var.get())
-			c=np.resize(b,[b.shape[0],b.shape[1]*b.shape[2]])
-		else: 
-			a = ""
-			if(gl_vars.output is not None):
-				c = gl_vars.output.values
-				gl_vars.output = None
-			else:
-				openPlotWindow(1)
-				return
-		tk.Label(window, text = a).grid(row = 2, column = 0, columnspan = 2)
-		pd.DataFrame(c).to_csv(asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]), header = None, index = None, na_rep = "NaN")
-		tk.Label(window, text = "Done").grid(row = 3, column = 1, columnspan = 2)
-	# POST-CONDITION
-	#	File is saved in csv format, after user-has been prompted for a name.
+	#	Function is checkbox triggered. Arguments are required dummies.
+	#	gl_vars.root needs to have been initialised at the start.
 
-	tk.Button(window, text = 'Save', command = saveCSV).grid(row = 10, column = 1)
-# POST-CONDITION
-#	A pop-up window for CSV saving is created, with the option of filtering using a shapefile.
-#	A button is created and placed, which can be used to save the file.
+
+def plotWindow():
+	openWindow(0)
+
+def exportToCSV():
+	openWindow(1)
+
+def retrieveData():
+	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+	getIndexes()
+	if (gl_vars.chk_var_list3[i].get() == 1):
+		openWindow(2)
+	else:
+		sel_message, output_message = ffunc.getData(i, 0, None)
+		printMessages(output_message,sel_message)
