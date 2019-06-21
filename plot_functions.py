@@ -42,7 +42,7 @@ from affine import Affine
 #	plac_ind: The index of the place (shape selected from the Shapefile) as an integer. If None, not All are chosen
 def plotMapShape(ind,var_name, time_index, shpfile, plac_ind, proj_string):
 
-	proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
+	#proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
 	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, time_index, shpfile, plac_ind)
@@ -99,13 +99,13 @@ def getProjection(proj_string):
 	}
 	return proj_dict[proj_string]
 
-
-def animation(ind,var_name, time_index, shpfile, plac_ind, proj_string):
+def animation(ind,var_name, time_range, shpfile, plac_ind, proj_string, show, save, savename):
 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
 	plt.style.use('seaborn-pastel')
 	fig = plt.figure()
-	ax = plt.axes(projection=pc)
-	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, 0, shpfile, plac_ind)
+	proj = getProjection(proj_string)
+	ax = plt.axes(projection=proj)
+	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, time_range[0], shpfile, plac_ind)
 	kwargs = dict(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
 	mesh = xds.plot.pcolormesh(**kwargs)
 	cl = None
@@ -118,41 +118,210 @@ def animation(ind,var_name, time_index, shpfile, plac_ind, proj_string):
 	#textvar = ax.text(-180,-90, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
 	#title = ax.title
 	#plt.show()
-
+	message = None
 	def init():
 		nonlocal cl
-		cl.set_visible(True)
+		if (geometries is None):
+			cl.set_visible(True)
 		return cl,ax.title
 
 	def animate(i):
 		nonlocal  mesh,cl,textvar1
-		xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind,var_name, i, shpfile, plac_ind)
+		xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind,var_name, time_range[0]+i, shpfile, plac_ind)
 		mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, add_colorbar = False)
-		print(i)
+		print(message+'['+str(i+1)+'/'+str(time_range[1]-time_range[0]+1)+']')
 		textvar1.set_text(ax.title.get_text()+ "\nMean: "+ str(np.nanmean(np.array(xds)))+ "\nStandard Deviation: "+ str(np.nanstd(np.array(xds))))
-		cl.set_visible(True)	#textvar.set_text("Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
+		cl.set_visible(True)
+		if(i == time_range[1]-time_range[0] and show == 1):
+			print("To continue, close the window.")
 		return mesh,cl,textvar1
 
 
-	anim = FuncAnimation(fig, animate, frames=776, interval=20, blit=True, repeat=False, init_func = init)
-	#plt.show()
-
-	anim.save('air_temp.gif', writer='imagemagick')
+	anim = FuncAnimation(fig, animate, frames=time_range[1]-time_range[0]+1, interval=20, blit=True, repeat=False, init_func = init)
+	
+	if(show == 1):
+		message = "Displaying "
+		plt.show()
+	# if also saving, put a message saying that window needs to be closed.
+	if(save == 1):
+		message = "Saving "
+		anim.save(savename+'.gif', writer='imagemagick')
 # 	
 
-def vectorMap(ind,var_name, time_index, shpfile, plac_ind, proj_string):
+def vectorMap(ind, time_index, shpfile, plac_ind, proj_string):
 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
-
+	proj = getProjection(proj_string) 
+	plt.clf()
 	fig = plt.figure()
-	ax = plt.axes(projection = pc)
+	ax = plt.axes(projection = proj)
 	ax.coastlines()
-	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', 0, shpfile, plac_ind)
-	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', 0, shpfile, plac_ind)
+	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', time_index, shpfile, plac_ind)
+	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', time_index, shpfile, plac_ind)
 	lon_arr = np.sort(((np.array(gl_vars.data[ind].coords[lon_var]) + 180) % 360) -180)
 	lat_arr = np.array(gl_vars.data[ind].coords[lat_var])
 	u_arr = np.array(xds1)
 	v_arr = np.array(xds2)
 	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
-	plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 20)
+	plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
 	plt.colorbar(orientation = 'horizontal')
 	plt.show()
+
+
+# def vectorAnim(ind,time_range,shpfile, plac_ind, proj_string):
+# 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+# 	proj = getProjection(proj_string) 
+# 	fig = plt.figure()
+# 	ax = plt.axes(projection = proj)
+# 	cl = ax.coastlines()
+# 	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', time_range[0], shpfile, plac_ind)
+# 	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', time_range[0], shpfile, plac_ind)
+# 	lon_arr = np.sort(((np.array(gl_vars.data[ind].coords[lon_var]) + 180) % 360) -180)
+# 	lat_arr = np.array(gl_vars.data[ind].coords[lat_var])
+# 	u_arr = np.array(xds1)
+# 	v_arr = np.array(xds2)
+# 	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+# 	Q = ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+# 	#plt.colorbar(orientation = 'horizontal')
+# 	cl.set_visible(True)
+
+
+# 	def init():
+# 		nonlocal cl
+# 		if (geometries is None):
+# 			cl.set_visible(True)
+# 		return cl,ax.title
+
+# 	def animate(i):
+# 		nonlocal cl, Q
+# 		plt.clf()
+# 		#plt.cla()
+# 		ax = plt.axes(projection = proj)
+# 		ax.coastlines()
+# 		xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', time_range[0]+i, shpfile, plac_ind)
+# 		xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', time_range[0]+i, shpfile, plac_ind)
+# 		u_arr = np.array(xds1)
+# 		v_arr = np.array(xds2)
+# 		velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+# 		cl.set_visible(True)
+# 		Q = ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+# 		#Q.set_UVC(u_arr, v_arr, velocity)
+# 		print(message+'['+str(i+1)+'/'+str(time_range[1]-time_range[0]+1)+']')
+# 		if(i == time_range[1]-time_range[0]):
+# 			print("To continue saving, close current plot window.") 
+# 		return Q,cl 
+# 	anim = FuncAnimation(fig, animate, frames=time_range[1]-time_range[0]+1, interval=20, blit=True, repeat=False, init_func = init)
+# 	message = "Displaying "
+# 	plt.show()
+# 	# if also saving, put a message saying that window needs to be closed.
+
+# 	message = "Saving "
+# 	anim.save('filename.gif', writer='imagemagick')
+#  	
+# def vectorAnim(ind,time_range,shpfile, plac_ind, proj_string, show, save, savename):
+# 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+# 	proj = getProjection(proj_string) 
+# 	fig = plt.figure()
+# 	ax = plt.axes(projection = proj)
+# 	ax.coastlines()
+# 	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', time_range[0], shpfile, plac_ind)
+# 	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', time_range[0], shpfile, plac_ind)
+# 	lon_arr = np.sort(((np.array(gl_vars.data[ind].coords[lon_var]) + 180) % 360) -180)
+# 	lat_arr = np.array(gl_vars.data[ind].coords[lat_var])
+# 	u_arr = np.array(xds1)
+# 	v_arr = np.array(xds2)
+# 	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+# 	ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+# 	#plt.colorbar(orientation = 'horizontal')
+# 	#plt.show()
+	
+# 	def animate(i):
+# 		time_array = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[ind].variables['time'].values)]
+# 		plt.clf()
+# 		ax = plt.axes(projection = proj)
+# 		ax.coastlines()
+# 		ax.set_title(time_array[i])
+# 		xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', i, shpfile, plac_ind)
+# 		xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', i, shpfile, plac_ind)
+# 		u_arr = np.array(xds1)
+# 		v_arr = np.array(xds2)
+# 		velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+# 		#cl.set_visible(True)
+# 		ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+# 		print(message+'['+str(i+1)+'/'+str(time_range[1]-time_range[0]+1)+']')
+# 		if(i == time_range[1]-time_range[0]):
+# 			print("To continue saving, close current plot window.") 
+# 		plt.savefig("temp"+ str(i)+'.png', dpi = 'figure')
+# 		plt.draw()
+# 	#anim = FuncAnimation(fig, animate, frames=time_range[1]-time_range[0]+1, interval=20, blit=True, repeat=False, init_func = init)
+# 	message = "Saving "
+# 	#plt.show()
+# 	# if also saving, put a message saying that window needs to be closed.
+# 	for i in range(time_range[0], time_range[1]+1):
+# 		animate(i)
+
+# 	if(save == 1):
+# 		import subprocess
+# 		import os
+# 		subprocess.call("convert -delay 40 temp*.png "+savename+".gif", shell=True)
+# 		for i in range(time_range[0], time_range[1]+1):
+# 			os.remove("temp"+str(i)+'.png')
+	
+
+
+
+def vectorAnim(ind,time_range,shpfile, plac_ind, proj_string, show, save, savename):
+	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+	proj = getProjection(proj_string) 
+	fig = plt.figure()
+	ax = plt.axes(projection = proj)
+	ax.coastlines()
+	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', time_range[0], shpfile, plac_ind)
+	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', time_range[0], shpfile, plac_ind)
+	lon_arr = np.sort(((np.array(gl_vars.data[ind].coords[lon_var]) + 180) % 360) -180)
+	lat_arr = np.array(gl_vars.data[ind].coords[lat_var])
+	u_arr = np.array(xds1)
+	v_arr = np.array(xds2)
+	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+	ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+	#plt.colorbar(orientation = 'horizontal')
+	#plt.show()
+	def init():
+		ax.coastlines()
+		return ax.title
+	
+	def animate(i):
+		time_array = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[ind].variables['time'].values)]
+		plt.clf()
+		ax = plt.axes(projection = proj)
+		ax.coastlines()
+		ax.set_title(time_array[i])
+		xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', i, shpfile, plac_ind)
+		xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', i, shpfile, plac_ind)
+		u_arr = np.array(xds1)
+		v_arr = np.array(xds2)
+		velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+		#cl.set_visible(True)
+		ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+		print(message+'['+str(i+1)+'/'+str(time_range[1]-time_range[0]+1)+']')
+		if(i == time_range[1]-time_range[0] and show == 1):
+			print("To continue, close current plot window.") 
+		if(save == 1):
+			plt.savefig("temp"+ str(i).zfill(4)+'.png', dpi = 'figure')
+		plt.draw()
+	
+	anim = FuncAnimation(fig, animate, frames=time_range[1]-time_range[0]+1, interval=1, blit=False, repeat=False, init_func = init)
+	message = "Saving "
+	# if also saving, put a message saying that window needs to be closed.
+	if(show == 1):
+		plt.show()
+	
+
+	if(save == 1):
+		for i in range(time_range[0], time_range[1]+1):
+		 	animate(i)
+		import subprocess
+		import os
+		subprocess.call("convert -delay 40 temp*.png "+savename+".gif", shell=True)
+		for i in range(time_range[0], time_range[1]+1):
+			os.remove("temp"+str(i).zfill(4)+'.png')
+	

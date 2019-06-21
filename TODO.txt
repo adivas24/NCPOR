@@ -16,3 +16,9 @@
 10. In the animations, check shape file and create apt UI.
 11. For vector mapping, check if file has a uX, vX combination, and create suitable UI. Add shape file interface and finally integrate it with the animation tools.
 12. Gen beautification.
+
+
+
+ In animation function, create a save/show checkbox. And name for saved file should be an option. I can't keep accidentally overwriting files. 
+  Find out why shapefile is messed up, maybe blitting is to be blamed?
+  Anyway, create the option to toggle blitting.
