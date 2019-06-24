@@ -345,13 +345,13 @@ def openWindow(org):
 				la2.grid(row = 25, column = 0)
 				combo1.config(values = places2)
 				combo1.grid(row = 25, column = 1)
-		else:
+		elif(var2.get() == 0):
 			filename = None
 			plac_ind = None
 
 			combo1.grid_forget()
-			l1.grid_forget()
-			l2.grid_forget()
+			la1.grid_forget()
+			la2.grid_forget()
 	output = None
 	if (org == 0):
 		#Map plot
@@ -488,11 +488,13 @@ def openWindow(org):
 		var = tk.StringVar(window)
 		var.set(var_list[0])
 		varSpin1 = tk.StringVar(window)
+		varSpin2 = tk.StringVar(window)
 		varBnd = tk.IntVar(window)
 		tk.Label(window, text = "Select variable: ").grid(row = 1, column = 0)
 		tk.OptionMenu(window, var, *var_list).grid(row = 1, column = 1)
-		tk.Label(window, text = "Select time: ").grid(row = 2, column = 0)
+		tk.Label(window, text = "Select time range: ").grid(row = 2, column = 0)
 		tk.Spinbox(window, values = time_range, textvariable = varSpin1).grid(row = 2, column = 1)
+		tk.Spinbox(window, values = time_range, textvariable = varSpin2).grid(row = 2, column = 2)
 		tk.Label(window, text = "Bounds?").grid(row = 3, column = 0)
 		tk.Radiobutton(window, text = "Use bounds specified in previous window", variable = varBnd, value = 0).grid(row = 3, column = 1)
 		tk.Radiobutton(window, text = "Apply no bounds", variable = varBnd, value = 1).grid(row = 3, column = 2)
@@ -501,22 +503,34 @@ def openWindow(org):
 		def saveCSV():
 			var_name = var.get()
 			t1 = time_range.index(varSpin1.get())
+			t2 = time_range.index(varSpin2.get())
+			time_t = [t1,t2]
+			time_t.sort()
+			t3 = slice(time_t[0], time_t[1]+1)
 			if(varBnd.get() == 0):
 				getIndexes()
 				data_arr = ffunc.getData(i,0,var_name)[1]
 				if (filename is not None):
 					temp, lon_var, lat_var, temp2 = ffunc.getShapeData(i, var_name, t1, filename, plac_ind)
-					out = ffunc.applyShape(data_arr, lat_var, lon_var, shpfile, plac_ind)
+					out = ffunc.applyShape(data_arr, lat_var, lon_var, filename, plac_ind)[0]
 				else:
 					out = data_arr
 			elif(varBnd.get() == 1):
 				if (filename is not None):
-					out = ffunc.getShapeData(i, var_name, t1, filename, plac_ind)
+					out = [np.array(ffunc.getShapeData(i, var_name, time_t[0], filename, plac_ind)[0])]
+					for time_i in range(time_t[0], time_t[1]):
+						out.append(ffunc.getShapeData(i, var_name, time_i+1, filename, plac_ind)[0]) 
+					#This segment takes a long long time to execute. Please keep that in mind. Hence, testing is also not thorough.
+					out = np.array(out)
 				else:
-					out = gl_vars.data[i].data_vars[var_name][t1,:,:]
-
-			resized_array = np.resize(out, [out.shape[0], out.shape[1], out.shape[2]])
-
+					out = gl_vars.data[i].data_vars[var_name][t3,:,:]
+			#print(out)
+			#print("Hey")
+			if(varBnd.get() == 0 and filename is not None):
+				resized_array = np.array(out.data)
+			else:
+				resized_array = np.resize(out, [out.shape[0]* out.shape[1], out.shape[2]])
+			#print(resized_array, resized_array.shape)
 			pd.DataFrame(resized_array).to_csv(asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]), header = None, index = None, na_rep = "NaN")
 			tk.Label(window, text = "Done").grid(row = 43, column = 1, columnspan = 2)
 		b1.config(command = saveCSV)

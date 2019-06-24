@@ -46,7 +46,7 @@ def getData(ind, org, *args):
 		else:
 			var_name = args[0]
 			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[var_name].dims])
-			output_message = gl_vars.data[ind].variables[var_name].values[out_ind]
+			output_message = gl_vars.data[ind].variables[var_name][out_ind]
 	elif(org == 1):
 		output_message = getOutputMessage(ind, mess_ind_2, args[0])
 	return sel_message, output_message
@@ -165,12 +165,20 @@ def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
 	with fiona.open(shpfile) as records:
 		geometries = [sgeom.shape(shp['geometry']) for shp in records]
 	shapes = [(shape, n) for n,shape in enumerate(test.geometry)]
-	lat = np.asarray(da1.coords[lat_var])
-	lon = np.asarray(da1.coords[lon_var])
+	print(da1)
+	try:
+		lat = np.asarray(da1.coords[lat_var])
+		lon = np.asarray(da1.coords[lon_var])
+	except:
+		lat = np.asarray(gl_vars.data[list(gl_vars.data.keys())[0]].coords[lat_var])
+		lon = np.asarray(gl_vars.data[list(gl_vars.data.keys())[0]].coords[lon_var])		
 	trans = Affine.translation(lon[0], lat[0])
 	scale = Affine.scale(lon[1]- lon[0], lat[1] - lat[0])
 	transform = trans*scale
-	out_shape = (len(da1.coords[lat_var]), len(da1.coords[lon_var]))
+	try:
+		out_shape = (len(da1.coords[lat_var]), len(da1.coords[lon_var]))
+	except:
+		out_shape = (da1.shape[0]*da1.shape[1],da1.shape[2])
 	if (plac_ind is not None):
 		shape_i = [shapes[plac_ind]]
 	else:
