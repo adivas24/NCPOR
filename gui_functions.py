@@ -6,6 +6,7 @@ import plot_functions as pfunc
 
 import tkinter as tk
 from tkinter import ttk
+from tkinter import tix
 from tkinter.filedialog import askopenfilename
 from tkinter.filedialog import asksaveasfilename
 
@@ -24,6 +25,18 @@ from datetime import datetime
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
 #THE ENTIRE PLOT WINDOW PART NEEDS RESTRUCTURING
+
+class AutoScrollbar(tk.Scrollbar):
+    # a scrollbar that hides itself if it's not needed.  only
+    # works if you use the grid geometry manager.
+    def set(self, lo, hi):
+        if float(lo) <= 0.0 and float(hi) >= 1.0:
+            # grid_remove is currently missing from Tkinter!
+            self.tk.call("grid", "remove", self)
+        else:
+            self.grid()
+        tk.Scrollbar.set(self, lo, hi)
+
 
 # PRE-CONDITION
 #	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
@@ -104,9 +117,13 @@ def getMultiSets(filenames):
 			a.destroy()
 		gl_vars.nb = ttk.Notebook(gl_vars.root)
 		menu = tk.Menu(gl_vars.root)
-		menu.add_command(label = "Plot", command = plotWindow)
+		submenu1 = tk.Menu(gl_vars.root)
+		submenu1.add_command(label = "Calculator", command = dataSelector)
+		submenu1.add_command(label = "Time Series")
+		submenu1.add_command(label = "Other plots")
+		menu.add_command(label = "Plot on Map", command = plotWindow)
 		menu.add_command(label = "Export", command = exportToCSV)
-		menu.add_command(label = "Statistics", command = exportToCSV)
+		menu.add_cascade(label = "Statistics", menu = submenu1)
 
 		gl_vars.root.config(menu=menu)
 		addPages(filenames2)
@@ -146,7 +163,7 @@ def addPages(filenames):
 # PRE-CONDITION
 #	gl_vars.chk_var_list1 and gl_vars.spn_box_list need to be initialised before function call.
 def trig(event,b,c):
-	dats = event.split('$')		#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	dats = event.split('$')		
 	n1 = dats[2]
 	i = dats[1]
 	row_num = int(dats[3])
@@ -568,3 +585,149 @@ def retrieveData():
 		sel_message, output_message = ffunc.getData(i, 0, None)
 		printMessages(output_message,sel_message)
 
+def dataSelector():
+	window = tk.Toplevel(gl_vars.root)
+	#window.maxsize(width=0, height=100)
+	## THESE SCROLLBARS ARE UTTERLY USELESS NEED TO CORRECT THAT
+	## UPDATE: NOT useless anu
+##############################################################
+	window.grid_rowconfigure(0, weight=1)
+	window.grid_columnconfigure(0, weight=1)
+
+	xscrollbar = tk.Scrollbar(window, orient="horizontal")
+	xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
+
+	yscrollbar = tk.Scrollbar(window)
+	yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
+
+	canvas = tk.Canvas(window, bd=0,
+                xscrollcommand=xscrollbar.set,
+                yscrollcommand=yscrollbar.set)
+
+	canvas.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+	xscrollbar.config(command=canvas.xview)
+	yscrollbar.config(command=canvas.yview)
+	frame = tk.Frame(canvas, width=1000,height=1000)
+	canvas.create_window((0,0), window=frame, anchor='nw')
+	# vscrollbar = tk.Scrollbar(window)
+	# hscrollbar = tk.Scrollbar(window, orient = "horizontal")
+	# vscrollbar.pack(side = "right", fill = "y")
+	# hscrollbar.pack(side = "bottom", fill = "x")
+	# canvas = tk.Canvas(window,yscrollcommand = vscrollbar.set,xscrollcommand = hscrollbar.set)
+	# canvas.pack(side = "top", expand = True)
+	# vscrollbar.config(command = canvas.yview)
+	# hscrollbar.config(command = canvas.xview)
+	
+##########################
+	var_time = tk.IntVar(frame)
+	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+	tk.Label(frame, text = "Select data points by: ").grid(row = 0,column = 0)
+	tk.Radiobutton(frame, variable = var_time, value = 0, text = "Year").grid(row = 0, column = 1)
+	tk.Radiobutton(frame, variable = var_time, value = 1, text = "Month").grid(row = 0, column = 2)
+	time_range = [pd.to_datetime(a).date() for a in list(gl_vars.data[i].variables['time'].values)]
+	time_range.sort()
+	tk.Label(frame, text = "Select variables:" ).grid(row = 20,column = 0)
+	var_var = dict()
+	num = 0
+	for x in list(gl_vars.data[i].data_vars.keys()):
+		var_var[x] = tk.IntVar(frame)
+		tk.Checkbutton(frame, text = x, variable = var_var[x]).grid(row = 21, column = num)
+		num += 1
+	chk = []
+	var_rad = None
+	var_arr = None
+	year_start, year_end = None, None
+	tk.Label(frame, text = "Statistics").grid(row = 90, column = 0)
+	outField = tk.Text(frame, height = 4, width = 5)
+	outField.grid(row = 90, column = 1, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	var_month = [tk.IntVar(frame, name = "all"+"_"+ mon) for mon in months]
+	month_label = [tk.Checkbutton(frame, text = months[d], variable = var_month[d]) for d in range(len(months))]
+	year_start = int(time_range[0].year)
+	year_end = int(time_range[-1].year)
+	var_year = [tk.IntVar(frame, name = str(d)+ "_all") for d in range(year_start,year_end+1)]
+	year_labels = [tk.Checkbutton(frame, text = str(ind+year_start), variable = var_year[ind]) for ind in range(year_end-year_start+1)]
+	var_rad = [tk.IntVar(frame) for ind in range(year_end-year_start+1)]
+	chk = [tk.Checkbutton(frame, text = str(ind+year_start), variable =  var_rad[ind]) for ind in range(year_end-year_start+1)]
+	chk2 = dict()
+	for dra in range(year_start,year_end+1):
+		chk2[str(dra)] = dict()
+		for mon in months:
+			chk2[str(dra)][mon] = [tk.IntVar(frame, name = str(dra)+"_"+mon)]
+			chk2[str(dra)][mon].append(tk.Checkbutton(frame, variable =  chk2[str(dra)][mon][0]))
+	def selectGrid(event, b, c):
+		nonlocal var_var, var_rad, chk, year_start, year_end
+		if(var_time.get() == 0):
+			for i in month_label:
+				i.grid_forget()
+			for i in year_labels:
+				i.grid_forget()
+			for i in range(0,year_end-year_start+1):
+				for m in range(12):
+					chk2[str(i+year_start)][months[m]][1].grid_forget() 
+			row_max = 10
+			for ind in range(year_end-year_start+1):
+				chk[ind].grid(row = 1+(ind%row_max), column = 1+ind//row_max)
+		elif(var_time.get() == 1):
+			for a in chk:
+				a.grid_forget()
+			for i in range(12):
+				month_label[i].grid(row = 1, column = 1+i)
+			for ind in range(0,year_end-year_start+1):
+				year_labels[ind].grid(row = 2+ind, column = 0)
+			for i in range(0,year_end-year_start+1):
+				for m in range(12):
+					chk2[str(i+year_start)][months[m]][1].grid(row = 2+i, column = m+1)
+	def getStats():
+		nonlocal var_var, var_arr
+		var_arr = [key for key,value in var_var.items() if value.get() == 1]
+		if(var_time.get() == 0):
+			chk_status = [a.get() for a in var_rad]
+			year_param = year_start
+		else:
+			chk_status = dict()
+			for dra in range(year_start,year_end+1):
+				chk_status[str(dra)] = dict()
+				for mon in months:
+					chk_status[str(dra)][mon] = chk2[str(dra)][mon][0].get()
+			year_param = None
+		outdict = ffunc.getStats(i, year_param, chk_status, var_arr)
+		outField.delete(1.0,tk.END)
+		outField.insert(tk.INSERT, generateMessage(outdict))
+	var_time.trace("w", selectGrid)
+	var_time.set(0)
+
+	b1 = tk.Button(frame, command = getStats, text = "Get statistics")
+	b1.grid(row = 100, column = 0)
+	canvas.config(scrollregion = (0,0,1000,1000))
+
+	def select(event, b, c):
+		year = event.split('_')[0]
+		mon = event.split('_')[1]
+		if(year == "all"):
+			for ind in range(year_start, year_end+1):
+				chk2[str(ind)][mon][0].set(var_month[months.index(mon)].get())
+		elif (mon == "all"):
+			for mon in months:
+				chk2[year][mon][0].set(var_year[int(year)-year_start].get())
+	for a in var_month:
+		a.trace("w", select)
+	for a in var_year:
+		a.trace("w", select)
+
+
+
+def generateMessage(data_dict):
+	outMessage = ""
+	for a in list(data_dict.keys()):
+		outMessage += a + '\n'
+		outMessage += "Mean: " + str(data_dict[a][0]) + '\n' 
+		outMessage += "Std Dev: " + str(data_dict[a][1]) + '\n' 
+		outMessage += "Max: " + str(data_dict[a][2]) + '\n' 
+		outMessage += "Min: " + str(data_dict[a][3]) + '\n' 
+		outMessage += '\n'
+	return outMessage
+
+def plotGenerator():
+	window = tk.Toplevel(gl_vars.root)

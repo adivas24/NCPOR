@@ -44,3 +44,7 @@ gfunc.getMultiSets(file_names)
 
 gl_vars.root.mainloop()
 # This keeps the tkinter widgets active.
+
+for a in list(gl_vars.data.values()):
+	a.close()
+#Cleanup. Closing files before end of program.

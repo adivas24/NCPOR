@@ -17,6 +17,7 @@ from rasterio import features
 from affine import Affine
 # Used for SHAPEFILES
 
+import datetime
 # TODO:
 #		Correct a few errors specifically mentioned.
 #		Exception, handling and fool-proofing.
@@ -188,3 +189,36 @@ def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
 # POST-CONDITION
 #	return values: raster is a feature which can be used to mask the data.
 #					geometries contains the shapes selected as a list.
+
+def getStats(ind, year_start, chk_status, variables):
+	dataSet = gl_vars.data[ind]
+	output = dict()
+	final = dict()
+	months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	time_list = [pd.to_datetime(a).date() for a in list(dataSet.variables['time'].values)]
+	for a in variables:
+		output[a] = []
+	if (year_start is not None):
+		year_set = set([])
+		for a in range(len(chk_status)):
+			if (chk_status[a] == 1):
+				year_set.add(year_start+a) 
+		for a in time_list:
+			if a.year in year_set:
+				for b in variables:
+					output[b].append(gl_vars.data[ind].variables[b].values[time_list.index(a),:,:])
+	else:
+		time_set = set([])
+		for year in list(chk_status.keys()):
+			for mon in months:
+				if (chk_status[year][mon] == 1):
+					time_set.add(str(year)+"_"+str(1 + months.index(mon)))
+		for a in time_list:
+			if (str(a.year)+"_"+str(a.month)) in time_set:
+				for b in variables:
+					output[b].append(gl_vars.data[ind].variables[b].values[time_list.index(a),:,:])
+	for a in variables:
+		output[a] = np.array(output[a])
+		final[a] = (np.nanmean(output[a]), np.nanstd(output[a]), np.nanmax(output[a]), np.nanmin(output[a]))
+	return final
+
