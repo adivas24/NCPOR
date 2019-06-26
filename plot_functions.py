@@ -11,6 +11,7 @@ import geopandas as gpd
 import cartopy 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from matplotlib.animation import FuncAnimation
 import matplotlib as mpl
 import matplotlib.cm as cm
@@ -216,4 +217,10 @@ def vectorAnim(ind,time_range,shpfile, plac_ind, proj_string, show, save, savena
 		subprocess.call("convert -delay 40 temp*.png "+savename+".gif", shell=True)
 		for i in range(time_range[0], time_range[1]+1):
 			os.remove("temp"+str(i).zfill(4)+'.png')
-	
+
+def plotLines(output_mean, output_std, time_array, variables):
+	x = mdates.date2num(time_array)
+	for b in variables:
+		plt.errorbar(x,output_mean[b], yerr=output_std[b])
+	plt.show()
+

@@ -18,6 +18,7 @@ from affine import Affine
 # Used for SHAPEFILES
 
 import datetime
+from dateutil.relativedelta import *
 # TODO:
 #		Correct a few errors specifically mentioned.
 #		Exception, handling and fool-proofing.
@@ -206,7 +207,7 @@ def getStats(ind, year_start, chk_status, variables):
 		for a in time_list:
 			if a.year in year_set:
 				for b in variables:
-					output[b].append(gl_vars.data[ind].variables[b].values[time_list.index(a),:,:])
+					output[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
 	else:
 		time_set = set([])
 		for year in list(chk_status.keys()):
@@ -216,9 +217,54 @@ def getStats(ind, year_start, chk_status, variables):
 		for a in time_list:
 			if (str(a.year)+"_"+str(a.month)) in time_set:
 				for b in variables:
-					output[b].append(gl_vars.data[ind].variables[b].values[time_list.index(a),:,:])
+					output[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
 	for a in variables:
 		output[a] = np.array(output[a])
 		final[a] = (np.nanmean(output[a]), np.nanstd(output[a]), np.nanmax(output[a]), np.nanmin(output[a]))
 	return final
 
+def plotData(ind, start_time_index, time_interval, variables):
+	dataSet = gl_vars.data[ind]
+	time_list = [pd.to_datetime(a).date() for a in list(dataSet.variables['time'].values)]
+	startTime = time_list[start_time_index]
+	if (time_interval[1] == "years"):
+		kwargs = {"years" : time_interval[0]}
+	if (time_interval[1] == "months"):
+		kwargs = {"months" : time_interval[0]}
+	if (time_interval[1] == "days"):
+		kwargs = {"days" : time_interval[0]}
+	time_step = relativedelta(**kwargs)
+
+	curr_lim = startTime+time_step
+	curr_data_set = []
+	output_mean = dict()
+	output_std = dict()
+	temp = dict()
+	time_array = []
+	flag = False
+	for b in variables:
+		temp[b] = []
+		output_mean[b] = []
+		output_std[b] = []
+	for a in time_list:
+		if (a<curr_lim):
+			flag = True
+			for b in variables:
+				temp[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
+		else:
+			flag = False
+			time_array.append(curr_lim-time_step)
+			for b in variables:
+				arr_temp = np.array(temp[b])
+				output_mean[b].append(np.nanmean(arr_temp))
+				output_std[b].append(np.nanstd(arr_temp))
+				temp[b] = []
+			curr_lim+=time_step
+	if(flag):
+		time_array.append(curr_lim-time_step)
+		for b in variables:
+			arr_temp = np.array(temp[b])
+			output_mean[b].append(np.nanmean(arr_temp))
+			output_std[b].append(np.nanstd(arr_temp))
+	#print(startTime, time_step, variables)
+	return (output_mean, output_std, time_array)

@@ -119,7 +119,7 @@ def getMultiSets(filenames):
 		menu = tk.Menu(gl_vars.root)
 		submenu1 = tk.Menu(gl_vars.root)
 		submenu1.add_command(label = "Calculator", command = dataSelector)
-		submenu1.add_command(label = "Time Series")
+		submenu1.add_command(label = "Time Series", command = plotGenerator)
 		submenu1.add_command(label = "Other plots")
 		menu.add_command(label = "Plot on Map", command = plotWindow)
 		menu.add_command(label = "Export", command = exportToCSV)
@@ -730,4 +730,42 @@ def generateMessage(data_dict):
 	return outMessage
 
 def plotGenerator():
+	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	window = tk.Toplevel(gl_vars.root)
+	time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
+	tk.Label(window, text = "Start time: ").grid(row = 0, column = 0)
+	varSpin = tk.StringVar(window)
+	tk.Spinbox(window, values = time_range, textvariable = varSpin).grid(row = 0, column = 1)
+	tk.Label(window, text = "Select time interval for x axis: ").grid(row = 1, column = 0)
+	varSpin1 = tk.StringVar(window)
+	varSpin2 = tk.StringVar(window)
+	spbox = tk.Spinbox(window, textvariable = varSpin1)
+	spbox.grid(row = 1, column = 1)
+	ttk.Combobox(window, textvariable = varSpin2, values = ["years", "months", "days"]).grid(row = 1, column = 2)
+	def fillValues(event, b, c):
+		#IDEALLY THIS IS NOT REQUIRED, USER SHOULD BE ABLE TO ENTER WHATEVER THEY WANT.
+		if (varSpin2.get() == "years"):
+			arr = [a for a in range(1,21)]
+		elif (varSpin2.get() == "months"):
+			arr = [a for a in range(1,13)]
+		elif (varSpin2.get() == "days"):
+			arr = [a for a in range(1,32)]
+		spbox.config(values = arr)
+	varSpin2.trace("w", fillValues)
+	tk.Label(window, text = "Select variables:" ).grid(row = 20,column = 0)
+	var_var = dict()
+	num = 0
+	for x in list(gl_vars.data[i].data_vars.keys()):
+		var_var[x] = tk.IntVar(window)
+		tk.Checkbutton(window, text = x, variable = var_var[x]).grid(row = 21, column = num)
+		num += 1
+	b1 = tk.Button(window, text = "Plot")
+	b1.grid(row = 100, column = 1)
+
+	def dataPlot():
+		start_time_index = time_range.index(varSpin.get())
+		time_interval = (int(varSpin1.get()), varSpin2.get())
+		variables = [key for key,value in var_var.items() if value.get() == 1]
+		output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables)
+		pfunc.plotLines(output_mean, output_std, time_array, variables)
+	b1.config(command = dataPlot)
