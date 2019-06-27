@@ -783,8 +783,9 @@ def plotGenerator():
 	lbl4 = tk.Label(window, text = "Select place:")
 	plc_var = tk.StringVar(window)
 	cmb1 = ttk.Combobox(window, textvariable = plc_var)
-
+	places = None
 	def selectFilter(event, b, c):
+		nonlocal places, filename
 		if (val_filt.get() == 0):
 			lbl1.grid_forget()
 			spn_box1.grid_forget()
@@ -856,13 +857,17 @@ def plotGenerator():
 		variables = [key for key,value in var_var.items() if value.get() == 1]
 		if (val_filt.get() == 0):
 			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables)
-			pfunc.plotLines(output_mean, output_std, time_array, variables)
 		elif(val_filt.get() == 1):
 			lat_r = [lat_arr2.index(spn_box1.get()),lat_arr2.index(spn_box2.get())]
 			lon_r = [lon_arr2.index(spn_box3.get()),lon_arr2.index(spn_box4.get())]
 			lat_r.sort()
 			lon_r.sort()
 			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
-			pfunc.plotLines(output_mean, output_std, time_array, variables)
-			#print(output_mean, output_std)
+		elif(val_filt.get() == 2):
+			if(plc_var.get() == "ALL"):
+				plac_ind = None
+			else:
+				plac_ind = places.index(plc_var.get())
+			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables, filt = "shapefile", filename = filename, place = plac_ind)
+		pfunc.plotLines(output_mean, output_std, time_array, variables)
 	b1.config(command = dataPlot)

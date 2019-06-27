@@ -137,7 +137,9 @@ def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
 		spatial_coords = {lat_var: da1.coords[lat_var], lon_var: da1.coords[lon_var]}
 		da1[var_name] = xr.DataArray(raster, coords=spatial_coords, dims=(lat_var, lon_var))
 		out =  da1.where(~np.isnan(da1[var_name]),other = np.nan)
+		#print(out)
 	else:
+		#print("time or var is None", time_index, var_name)
 		fin_arr = dict()
 		for a in list(gl_vars.data[ind].data_vars):
 			out_arr = []
@@ -167,7 +169,7 @@ def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
 	with fiona.open(shpfile) as records:
 		geometries = [sgeom.shape(shp['geometry']) for shp in records]
 	shapes = [(shape, n) for n,shape in enumerate(test.geometry)]
-	print(da1)
+	#print(da1)
 	try:
 		lat = np.asarray(da1.coords[lat_var])
 		lon = np.asarray(da1.coords[lon_var])
@@ -223,7 +225,7 @@ def getStats(ind, year_start, chk_status, variables):
 		final[a] = (np.nanmean(output[a]), np.nanstd(output[a]), np.nanmax(output[a]), np.nanmin(output[a]))
 	return final
 
-def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_range = None, lon_range = None):
+def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_range = None, lon_range = None, filename = None, place = None):
 	dataSet = gl_vars.data[ind]
 	time_list = [pd.to_datetime(a).date() for a in list(dataSet.variables['time'].values)]
 	startTime = time_list[start_time_index]
@@ -252,9 +254,12 @@ def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_r
 			flag = True
 			for b in variables:
 				if(filt == None):
-					temp[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
+					temp[b].append(np.array(dataSet.variables[b].values[time_list.index(a),:,:]))
 				if(filt == "bounds"):
-					temp[b].append(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range])
+					temp[b].append(np.array(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range]))
+				if(filt == "shapefile"):
+					#print(filename)
+					temp[b].append(np.array(getShapeData(ind, b, time_list.index(a), filename, place)[0]))
 		else:
 			flag = False
 			time_array.append(curr_lim-time_step)
