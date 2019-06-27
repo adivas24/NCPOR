@@ -64,8 +64,9 @@ def getSelectedMessage(ind):
 	mess_ind_2 = dict()
 	sel_message = "You have selected:\n"
 	for x in dimension_list:
-		# ADD AN if TIME, cover to only date datetime[ns64] is quite ugly.
 		arr = [str(a) for a in gl_vars.data[ind].variables[x].values]
+		if (a == "time"):
+			arr = [str(pd.to_datetime(a).date()) for a in gl_vars.data[i].variables[a].values]
 		mess_ind[x] = [arr.index(gl_vars.messages[x][0])]
 		sel_message += x + ' ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][0]])
 		if (gl_vars.messages[x][1] is not None):
@@ -95,9 +96,6 @@ def getOutputMessage(ind, mess_ind_2, org):
 		else:
 			test_array = np.array(org[x])
 		if(gl_vars.outVar[x]):
-			#ord_arr = [dimension_list.index(a) for a in gl_vars.data[ind].variables[x].dims]
-			#out_ind = tuple([mess_ind_2[a] for a in ord_arr])
-
 			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[x].dims])
 			temp = test_array[out_ind]
 			output_message += x + '\n' + str(temp) +'\nMean: '+str(np.nanmean(temp))+' Standard Deviation: '+str(np.nanstd(temp))+'\n'
@@ -137,9 +135,7 @@ def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
 		spatial_coords = {lat_var: da1.coords[lat_var], lon_var: da1.coords[lon_var]}
 		da1[var_name] = xr.DataArray(raster, coords=spatial_coords, dims=(lat_var, lon_var))
 		out =  da1.where(~np.isnan(da1[var_name]),other = np.nan)
-		#print(out)
 	else:
-		#print("time or var is None", time_index, var_name)
 		fin_arr = dict()
 		for a in list(gl_vars.data[ind].data_vars):
 			out_arr = []
@@ -169,7 +165,6 @@ def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
 	with fiona.open(shpfile) as records:
 		geometries = [sgeom.shape(shp['geometry']) for shp in records]
 	shapes = [(shape, n) for n,shape in enumerate(test.geometry)]
-	#print(da1)
 	try:
 		lat = np.asarray(da1.coords[lat_var])
 		lon = np.asarray(da1.coords[lon_var])
@@ -248,32 +243,47 @@ def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_r
 		temp[b] = []
 		output_mean[b] = []
 		output_std[b] = []
-		#print(dataSet.variables[b].dims)
 	for a in time_list:
+		if (a<startTime):
+			continue
 		if (a<curr_lim):
 			flag = True
 			for b in variables:
 				if(filt == None):
 					temp[b].append(np.array(dataSet.variables[b].values[time_list.index(a),:,:]))
-				if(filt == "bounds"):
+				elif(filt == "bounds"):
 					temp[b].append(np.array(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range]))
-				if(filt == "shapefile"):
-					#print(filename)
+				elif(filt == "shapefile"):
 					temp[b].append(np.array(getShapeData(ind, b, time_list.index(a), filename, place)[0]))
 		else:
-			flag = False
-			time_array.append(curr_lim-time_step)
-			for b in variables:
-				arr_temp = np.array(temp[b])
-				output_mean[b].append(np.nanmean(arr_temp))
-				output_std[b].append(np.nanstd(arr_temp))
-				temp[b] = []
+			if(flag):
+				time_array.append(curr_lim-time_step)
+				for b in variables:
+					arr_temp = np.array(temp[b])
+					output_mean[b].append(np.nanmean(arr_temp))
+					output_std[b].append(np.nanstd(arr_temp))
+			else:
+				while(a>curr_lim):
+					curr_lim +=time_step
+				if(len(temp[variables[0]]) != 0):
+					time_array.append(curr_lim)
+					for b in variables:
+						arr_temp = np.array(temp[b])
+						output_mean[b].append(np.nanmean(arr_temp))
+						output_std[b].append(np.nanstd(arr_temp))
 			curr_lim+=time_step
+			for b in variables:
+				if(filt == None):
+					temp[b] = [np.array(dataSet.variables[b].values[time_list.index(a),:,:])]
+				elif(filt == "bounds"):
+					temp[b] = [np.array(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range])]
+				elif(filt == "shapefile"):
+					temp[b] = [np.array(getShapeData(ind, b, time_list.index(a), filename, place)[0])]	
+			flag = False
 	if(flag):
 		time_array.append(curr_lim-time_step)
 		for b in variables:
 			arr_temp = np.array(temp[b])
 			output_mean[b].append(np.nanmean(arr_temp))
 			output_std[b].append(np.nanstd(arr_temp))
-	#print(startTime, time_step, variables)
 	return (output_mean, output_std, time_array)

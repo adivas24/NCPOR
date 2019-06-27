@@ -24,16 +24,7 @@ from affine import Affine
 # Used for reading and applying shapefile mask.
 
 # TODO	Plot only in a rectangular/polar range?
-#		Look into time-varying graphs and how they can be plotted.
-# 		Write code for non-map graphs.
 #		Figure out how to modify the size of maps and maybe make it dynamic?
-
-#if __name__ == "__main__":
-	#import numpy as np
-	#from matplotlib import pyplot as plt
-# def onclick(event):
-# 		print(event.button, event.x, event.y, event.xdata, event.ydata)
-
 
 # PRE-CONDITION
 #	ind: The index of the page selected as an integer.
@@ -43,7 +34,6 @@ from affine import Affine
 #	plac_ind: The index of the place (shape selected from the Shapefile) as an integer. If None, not All are chosen
 def plotMapShape(ind,var_name, time_index, shpfile, plac_ind, proj_string):
 
-	#proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
 	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, time_index, shpfile, plac_ind)
@@ -144,7 +134,7 @@ def animation(ind,var_name, time_range, shpfile, plac_ind, proj_string, show, sa
 	if(save == 1):
 		message = "Saving "
 		anim.save(savename+'.gif', writer='imagemagick')
-# 	
+	
 
 def vectorMap(ind, time_index, shpfile, plac_ind, proj_string):
 	pc = ccrs.PlateCarree()
@@ -178,8 +168,7 @@ def vectorAnim(ind,time_range,shpfile, plac_ind, proj_string, show, save, savena
 	v_arr = np.array(xds2)
 	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
 	ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
-	#plt.colorbar(orientation = 'horizontal')
-	#plt.show()
+
 	def init():
 		ax.coastlines()
 		return ax.title
@@ -222,5 +211,7 @@ def plotLines(output_mean, output_std, time_array, variables):
 	x = mdates.date2num(time_array)
 	for b in variables:
 		plt.errorbar(x,output_mean[b], yerr=output_std[b])
+	plt.xticks(x,time_array, rotation = 65, fontsize = "xx-small")
+	plt.tight_layout()
 	plt.show()
 

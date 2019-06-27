@@ -6,8 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilenames
 import tkinter.font as tkFont
-
-# The tkinter library is used to create various widgets for the GUI. ttk contains advanced widgets.
+# The tkinter library family is used to create various widgets for the GUI.
 
 import file_functions as ffunc
 import gui_functions as gfunc
@@ -16,10 +15,7 @@ import gl_vars
 # These are python files in the same directory which contain relevant functions. Although, not all have directly been used here, all have been imported.
 
 gl_vars.root = tk.Tk()
-# Creation of the main tkinter window and starting the tcl/tk interpreter and storing the object refernece in the variable present in gl_vars.
-
-gl_vars.font1 = tkFont.Font(root = gl_vars.root, family = "newspaper", size = 12)
-#print(gl_vars.font1.actual())
+# Creation of the main tkinter window and starting the tcl/tk interpreter and storing the object reference in the variable present in gl_vars.py.
 
 gl_vars.root.title('NetCDF file reader')
 # Sets the title for the window. Later can be replaced by the actual name of the software.
@@ -31,6 +27,7 @@ except:
 	gl_vars.root.destroy()
 	exit()
 # This tkinter function creates a pop-up window through which the user can select multiple .nc files. filenames, contains the list of the names (with complete paths) stored in the form of strings, selected by the user.
+# If no file is selected, the program terminates.
 
 gl_vars.data = ffunc.openNETCDF(filenames)
 # This gets the data from the NETCDF files by utilising the function defined in file_functions.py. It returns a list of xarray Datasets, each corresponding to one of the .nc files selected.

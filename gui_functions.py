@@ -24,25 +24,11 @@ from datetime import datetime
 # TODO	Go through and clean up code.
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
-#THE ENTIRE PLOT WINDOW PART NEEDS RESTRUCTURING
-
-class AutoScrollbar(tk.Scrollbar):
-    # a scrollbar that hides itself if it's not needed.  only
-    # works if you use the grid geometry manager.
-    def set(self, lo, hi):
-        if float(lo) <= 0.0 and float(hi) >= 1.0:
-            # grid_remove is currently missing from Tkinter!
-            self.tk.call("grid", "remove", self)
-        else:
-            self.grid()
-        tk.Scrollbar.set(self, lo, hi)
-
 
 # PRE-CONDITION
 #	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
 #	gl_vars.root and gl_vars.data should be initialized before function call. 
 def getMultiSets(filenames):
-	#print(gl_vars.font1.actual())
 	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
 	
@@ -487,7 +473,6 @@ def openWindow(org):
 			elif(var3.get() == "ALL"):
 				plac_ind = None
 			org = varRadio.get()
-			#print(plac_ind)
 			if (org == 0):
 				pfunc.plotMapShape(i,var_name, t1, filename, plac_ind, proj_string)
 			elif (org == 1):
@@ -541,13 +526,10 @@ def openWindow(org):
 					out = np.array(out)
 				else:
 					out = gl_vars.data[i].data_vars[var_name][t3,:,:]
-			#print(out)
-			#print("Hey")
 			if(varBnd.get() == 0 and filename is not None):
 				resized_array = np.array(out.data)
 			else:
 				resized_array = np.resize(out, [out.shape[0]* out.shape[1], out.shape[2]])
-			#print(resized_array, resized_array.shape)
 			pd.DataFrame(resized_array).to_csv(asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]), header = None, index = None, na_rep = "NaN")
 			tk.Label(window, text = "Done").grid(row = 43, column = 1, columnspan = 2)
 		b1.config(command = saveCSV)
@@ -716,8 +698,6 @@ def dataSelector():
 	for a in var_year:
 		a.trace("w", select)
 
-
-
 def generateMessage(data_dict):
 	outMessage = ""
 	for a in list(data_dict.keys()):
@@ -870,4 +850,5 @@ def plotGenerator():
 				plac_ind = places.index(plc_var.get())
 			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables, filt = "shapefile", filename = filename, place = plac_ind)
 		pfunc.plotLines(output_mean, output_std, time_array, variables)
+	
 	b1.config(command = dataPlot)

@@ -1,12 +1,11 @@
 # gl_vars.py
 
-# This file stores the variables which need to be accessed and modified across different files. All of them have been initialised to NULL values as they are specifically initialised by functions called in driver.py
+# This file stores the variables which need to be accessed and modified across different files. All of them have been initialised to NULL values as they are specifically initialised by functions called, either directly or indirectly, in driver.py
 
 
 data = dict()
-# data is a list containing the data extracted from the NetCDF files opened using xarray.
-# Each element in list corresponds to one of the .nc files opened.
-# Each element is an xarray DataSet.
+# data is a dictionary containing the data extracted from the NetCDF files opened using xarray.
+# The key for each element is the name of the file, while the value is an xarray DataSet.
 # It is initialised in driver.py after calling the function openNETCDF, defined in file_functions.py
 
 root = None
@@ -17,11 +16,12 @@ root = None
 nb = None
 # nb is the Notebook widget defined in the themed tkinter widgets library, ttk. Since a tabbed window format is being used, a notebook to hold pages is created.
 # It is the container for all pages as well as widgets that are commonly used by all of the pages, like the buttons for retrieving data, plotting, exporting and closing.
-# It is initialised in the createGUI function (called when a button is pressed) defined in gui_functions.py through a direct constructor call. 
+# It is initialised in the createGUI function (called when a button is pressed) defined in gui_functions.py through a direct call.
 
 pages = dict()
-# pages is a list containing a ttk Frame widget corresponding to each .nc file added. Each page is one 'tab' of the tabbed window format that is being used.
+# pages is a dictionary containing a ttk Frame widget corresponding to each .nc file added. Each page is one 'tab' of the tabbed window format that is being used.
 # It is the container for all widgets specific to the page, like the input boxes and selection options.
+# Filenames have been used as keys, they also serve as the page titles.
 # It is initialised by the function addPages, called in driver.py, defined in gui_functions.py.
 
 chk_var_list1 = dict()
