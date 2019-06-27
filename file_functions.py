@@ -223,7 +223,7 @@ def getStats(ind, year_start, chk_status, variables):
 		final[a] = (np.nanmean(output[a]), np.nanstd(output[a]), np.nanmax(output[a]), np.nanmin(output[a]))
 	return final
 
-def plotData(ind, start_time_index, time_interval, variables):
+def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_range = None, lon_range = None):
 	dataSet = gl_vars.data[ind]
 	time_list = [pd.to_datetime(a).date() for a in list(dataSet.variables['time'].values)]
 	startTime = time_list[start_time_index]
@@ -246,11 +246,15 @@ def plotData(ind, start_time_index, time_interval, variables):
 		temp[b] = []
 		output_mean[b] = []
 		output_std[b] = []
+		#print(dataSet.variables[b].dims)
 	for a in time_list:
 		if (a<curr_lim):
 			flag = True
 			for b in variables:
-				temp[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
+				if(filt == None):
+					temp[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
+				if(filt == "bounds"):
+					temp[b].append(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range])
 		else:
 			flag = False
 			time_array.append(curr_lim-time_step)

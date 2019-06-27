@@ -742,6 +742,12 @@ def plotGenerator():
 	spbox = tk.Spinbox(window, textvariable = varSpin1)
 	spbox.grid(row = 1, column = 1)
 	ttk.Combobox(window, textvariable = varSpin2, values = ["years", "months", "days"]).grid(row = 1, column = 2)
+	tk.Label(window, text = "Select filters:").grid(row = 25, column = 0)
+	val_filt = tk.IntVar(window)
+	tk.Radiobutton(window, variable = val_filt, value = 0, text = "No filters").grid(row = 26, column = 0)
+	tk.Radiobutton(window, variable = val_filt, value = 1, text = "Lat-Lon bounds").grid(row = 26, column = 1)
+	tk.Radiobutton(window, variable = val_filt, value = 2, text = "ShapeFile").grid(row = 26, column = 2)
+
 	def fillValues(event, b, c):
 		#IDEALLY THIS IS NOT REQUIRED, USER SHOULD BE ABLE TO ENTER WHATEVER THEY WANT.
 		if (varSpin2.get() == "years"):
@@ -752,6 +758,88 @@ def plotGenerator():
 			arr = [a for a in range(1,32)]
 		spbox.config(values = arr)
 	varSpin2.trace("w", fillValues)
+	
+	lon_var,lat_var = None, None
+	for a in list(gl_vars.data[i].dims):
+		if (a.lower().startswith("lon")):
+			lon_var = a
+		if (a.lower().startswith("lat")):
+			lat_var = a
+	
+	lat_arr = list(gl_vars.data[i].variables[lat_var].values)
+	lat_arr2 = [str(a) for a in lat_arr]
+	lat_arr.sort()
+	lon_arr = list(gl_vars.data[i].variables[lon_var].values)
+	lon_arr2 = [str(a) for a in lon_arr]
+	lon_arr.sort()
+	lbl1 = tk.Label(window, text = "Latitude Range:")
+	spn_box1 = tk.Spinbox(window, values = lat_arr)
+	spn_box2 = tk.Spinbox(window, values = lat_arr)
+	lbl2 = tk.Label(window, text = "Longitude Range:")
+	spn_box3 = tk.Spinbox(window, values = lon_arr)
+	spn_box4 = tk.Spinbox(window, values = lon_arr)
+	filename = None
+	lbl3 = tk.Label(window)
+	lbl4 = tk.Label(window, text = "Select place:")
+	plc_var = tk.StringVar(window)
+	cmb1 = ttk.Combobox(window, textvariable = plc_var)
+
+	def selectFilter(event, b, c):
+		if (val_filt.get() == 0):
+			lbl1.grid_forget()
+			spn_box1.grid_forget()
+			spn_box2.grid_forget()
+			lbl2.grid_forget()
+			spn_box3.grid_forget()
+			spn_box4.grid_forget()
+			lbl3.grid_forget()
+			lbl4.grid_forget()
+			cmb1.grid_forget()
+			filename = None
+
+		elif (val_filt.get() == 1):
+			lbl1.grid(row = 27, column = 0)
+			spn_box1.grid(row = 27, column = 1)
+			spn_box2.grid(row = 27, column = 2)
+			lbl2.grid(row = 28, column = 0)
+			spn_box3.grid(row = 28, column = 1)
+			spn_box4.grid(row = 28, column = 2)
+			lbl3.grid_forget()
+			lbl4.grid_forget()
+			cmb1.grid_forget()
+			filename = None
+		elif(val_filt.get() == 2):
+			lbl1.grid_forget()
+			spn_box1.grid_forget()
+			spn_box2.grid_forget()
+			lbl2.grid_forget()
+			spn_box3.grid_forget()
+			spn_box4.grid_forget()
+			filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
+			if (filename == ""):
+				filename = None
+				val_filt.set(0)
+			else:
+				shp = gpd.read_file(filename)
+				#print(list(shp.columns))
+				# Searching in this above list and selecting the name variable seems like a good idea.
+				try:
+					places = list(shp['NAME'])
+				except:
+					places = list(shp['ST_NAME'])
+				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
+				#[Need to modify the selector to allow multiple places to be selected.]
+				places2 = [i for i in places if i is not None]
+				places2.append("ALL")
+				places2.sort()
+				lbl3.config(text=filename.split('/')[-1])
+				lbl3.grid(row = 27, column = 0)
+				lbl4.grid(row = 28, column = 0)
+				cmb1.config(values = places2)
+				cmb1.grid(row = 28, column = 1)
+
+	val_filt.trace("w", selectFilter)
+
 	tk.Label(window, text = "Select variables:" ).grid(row = 20,column = 0)
 	var_var = dict()
 	num = 0
@@ -766,6 +854,15 @@ def plotGenerator():
 		start_time_index = time_range.index(varSpin.get())
 		time_interval = (int(varSpin1.get()), varSpin2.get())
 		variables = [key for key,value in var_var.items() if value.get() == 1]
-		output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables)
-		pfunc.plotLines(output_mean, output_std, time_array, variables)
+		if (val_filt.get() == 0):
+			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables)
+			pfunc.plotLines(output_mean, output_std, time_array, variables)
+		elif(val_filt.get() == 1):
+			lat_r = [lat_arr2.index(spn_box1.get()),lat_arr2.index(spn_box2.get())]
+			lon_r = [lon_arr2.index(spn_box3.get()),lon_arr2.index(spn_box4.get())]
+			lat_r.sort()
+			lon_r.sort()
+			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
+			pfunc.plotLines(output_mean, output_std, time_array, variables)
+			#print(output_mean, output_std)
 	b1.config(command = dataPlot)
