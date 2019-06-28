@@ -1,7 +1,6 @@
 # plot_functions.py #
 
 import gl_vars
-import file_functions as ffunc
 
 import xarray as xr
 import numpy as np
@@ -27,23 +26,16 @@ from affine import Affine
 #		Figure out how to modify the size of maps and maybe make it dynamic?
 
 # PRE-CONDITION
-#	ind: The index of the page selected as an integer.
-#	var_name: The name of the variable in question as a String.
-#	time_index: The index of the time we are plotting the data for, as an integer.
-#	shpfile: The name of the shapefile as a string. If None, no shape filters are applied.
-#	plac_ind: The index of the place (shape selected from the Shapefile) as an integer. If None, not All are chosen
-def plotMapShape(ind,var_name, time_index, shpfile, plac_ind, proj_string):
+def plotMapShape(proj_string, xds, lon_var, lat_var, geometries):
 
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
-	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, time_index, shpfile, plac_ind)
 	fig = plt.figure()
 	ax = plt.axes(projection=proj)
-	kwargs = dict(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
-	xds.plot.pcolormesh(**kwargs)
+	xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
 	if (geometries is not None):
 		ax.add_geometries(geometries, pc, edgecolor='gray', facecolor='none')
-	else:
+	else: # geometries is None means that no SHAPEFILE was used.
 		ax.coastlines()
 	ax.set_global()
 	fig.text(0,0, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
@@ -90,15 +82,14 @@ def getProjection(proj_string):
 	}
 	return proj_dict[proj_string]
 
-def animation(ind,var_name, time_range, shpfile, plac_ind, proj_string, show, save, savename):
-	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+def animation(length, proj_string, show, save, savename, getDat):
+	pc = ccrs.PlateCarree()
+	proj = getProjection(proj_string)
 	plt.style.use('seaborn-pastel')
 	fig = plt.figure()
-	proj = getProjection(proj_string)
 	ax = plt.axes(projection=proj)
-	xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind, var_name, time_range[0], shpfile, plac_ind)
-	kwargs = dict(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
-	mesh = xds.plot.pcolormesh(**kwargs)
+	xds, lon_var, lat_var, geometries = getDat(0)
+	mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
 	cl = None
 	if (geometries is not None):
 		ax.add_geometries(geometries, pc, edgecolor='black', facecolor='none')
@@ -106,7 +97,7 @@ def animation(ind,var_name, time_range, shpfile, plac_ind, proj_string, show, sa
 		cl = ax.coastlines()
 	ax.set_global()
 	textvar1 = ax.text(-175, -60,ax.title.get_text() + "\nMean: "+ str(np.nanmean(np.array(xds)))+ "\nStd Dev: "+ str(np.nanstd(np.array(xds))), size = "xx-small")
-	# Placement depends on position, gets messed up for all but the PlateCarree projection.
+	# Placement depends on projection, gets messed up for all but the PlateCarree projection.
 	message = None
 	def init():
 		nonlocal cl
@@ -116,17 +107,17 @@ def animation(ind,var_name, time_range, shpfile, plac_ind, proj_string, show, sa
 
 	def animate(i):
 		nonlocal  mesh,cl,textvar1
-		xds, lon_var, lat_var, geometries = ffunc.getShapeData(ind,var_name, time_range[0]+i, shpfile, plac_ind)
+		xds, lon_var, lat_var, geometries = getDat(i)
 		mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, add_colorbar = False)
-		print(message+'['+str(i+1)+'/'+str(time_range[1]-time_range[0]+1)+']')
+		print(message+'['+str(i+1)+'/'+str(length+1)+']')
 		textvar1.set_text(ax.title.get_text()+ "\nMean: "+ str(np.nanmean(np.array(xds)))+ "\nStandard Deviation: "+ str(np.nanstd(np.array(xds))))
 		cl.set_visible(True)
-		if(i == time_range[1]-time_range[0] and show == 1):
+		if(i == length and show == 1):
 			print("To continue, close the window.")
 		return mesh,cl,textvar1
 
 
-	anim = FuncAnimation(fig, animate, frames=time_range[1]-time_range[0]+1, interval=20, blit=True, repeat=False, init_func = init)
+	anim = FuncAnimation(fig, animate, frames=length+1, interval=20, blit=True, repeat=False, init_func = init)
 	
 	if(show == 1):
 		message = "Displaying "
@@ -136,37 +127,23 @@ def animation(ind,var_name, time_range, shpfile, plac_ind, proj_string, show, sa
 		anim.save(savename+'.gif', writer='imagemagick')
 	
 
-def vectorMap(ind, time_index, shpfile, plac_ind, proj_string):
+def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity):
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string) 
 	plt.clf()
 	fig = plt.figure()
 	ax = plt.axes(projection = proj)
 	ax.coastlines()
-	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', time_index, shpfile, plac_ind)
-	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', time_index, shpfile, plac_ind)
-	lon_arr = np.sort(((np.array(gl_vars.data[ind].coords[lon_var]) + 180) % 360) -180)
-	lat_arr = np.array(gl_vars.data[ind].coords[lat_var])
-	u_arr = np.array(xds1)
-	v_arr = np.array(xds2)
-	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
 	plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
 	plt.colorbar(orientation = 'horizontal')
 	plt.show()
 
-def vectorAnim(ind,time_range,shpfile, plac_ind, proj_string, show, save, savename):
+def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_array):
 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
 	proj = getProjection(proj_string) 
 	fig = plt.figure()
 	ax = plt.axes(projection = proj)
 	ax.coastlines()
-	xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', time_range[0], shpfile, plac_ind)
-	xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', time_range[0], shpfile, plac_ind)
-	lon_arr = np.sort(((np.array(gl_vars.data[ind].coords[lon_var]) + 180) % 360) -180)
-	lat_arr = np.array(gl_vars.data[ind].coords[lat_var])
-	u_arr = np.array(xds1)
-	v_arr = np.array(xds2)
-	velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
 	ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
 
 	def init():
@@ -174,37 +151,38 @@ def vectorAnim(ind,time_range,shpfile, plac_ind, proj_string, show, save, savena
 		return ax.title
 	
 	def animate(i):
-		time_array = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[ind].variables['time'].values)]
 		plt.clf()
 		ax = plt.axes(projection = proj)
 		ax.coastlines()
 		ax.set_title(time_array[i])
-		xds1, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'u10', i, shpfile, plac_ind)
-		xds2, lon_var, lat_var, geometries = ffunc.getShapeData(ind, 'v10', i, shpfile, plac_ind)
+		xds1, lon_var, lat_var, geometries = getU(i)
+		xds2, lon_var, lat_var, geometries = getV(i)
 		u_arr = np.array(xds1)
 		v_arr = np.array(xds2)
 		velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
 		ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
-		print(message+'['+str(i+1)+'/'+str(time_range[1]-time_range[0]+1)+']')
-		if(i == time_range[1]-time_range[0] and show == 1):
+		print(message+'['+str(i+1)+'/'+str(length+1)+']')
+		if(i == length and show == 1):
 			print("To continue, close current plot window.") 
 		if(save == 1):
 			plt.savefig("temp"+ str(i).zfill(4)+'.png', dpi = 'figure')
 		plt.draw()
 	
-	anim = FuncAnimation(fig, animate, frames=time_range[1]-time_range[0]+1, interval=1, blit=False, repeat=False, init_func = init)
-	message = "Saving "
+	anim = FuncAnimation(fig, animate, frames=length+1, interval=1, blit=False, repeat=False, init_func = init)
+	message = "Displaying "
 	if(show == 1):
 		plt.show()
 	
 
+	message = "Saving "
 	if(save == 1):
-		for i in range(time_range[0], time_range[1]+1):
-		 	animate(i)
+		if(show != 1):
+			for i in range(length+1):
+		 		animate(i)
 		import subprocess
 		import os
 		subprocess.call("convert -delay 40 temp*.png "+savename+".gif", shell=True)
-		for i in range(time_range[0], time_range[1]+1):
+		for i in range(length+1):
 			os.remove("temp"+str(i).zfill(4)+'.png')
 
 def plotLines(output_mean, output_std, time_array, variables):

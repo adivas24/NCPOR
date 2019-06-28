@@ -49,28 +49,18 @@ def getMultiSets(filenames):
 	text = tk.Entry(gl_vars.root, textvariable = var)
 	text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
 	
+	b1 = tk.Button(gl_vars.root, text = 'Combine')
+	b2 = tk.Button(gl_vars.root, text = 'More (Refresh list)')
+	b3 = tk.Button(gl_vars.root, text = 'Done')
 	# PRE-CONDITION
 	#	gl_vars.data needs to have been initialised earlier.
 	#	var (The text Entry widget) should have a valid string.
 	def combine_files():
-		nonlocal filenames2
 		indxs = [a for a in filenames if chk_vars[a].get() == 1]
-		data_mod = [gl_vars.data[a] for a in indxs]
-		merged = xr.merge(data_mod)
-		filenames2 = [a for a in filenames if a not in indxs]
-		copy = dict()
-		for a in filenames2:
-			copy[a] = gl_vars.data[a]
-		newName =var.get()
-		copy[newName] = merged
-		gl_vars.data = copy
-		filenames2.append(newName)
+		filenames2 = ffunc.combineFiles(filenames, indxs)
 	# POST-CONDITION
 	#	gl_vars.data and filenames2 now contain a smaller list after combining the selected Datasets.
 
-	b1 = tk.Button(gl_vars.root, text = 'Combine')
-	b2 = tk.Button(gl_vars.root, text = 'More (Refresh list)')
-	b3 = tk.Button(gl_vars.root, text = 'Done')
 
 	# PRE-CONDITION
 	#	No-prereqs as such. Outer function needs to work and should not form cyclic calls.
@@ -154,7 +144,7 @@ def trig(event,b,c):
 	i = dats[1]
 	row_num = int(dats[3])
 	if (gl_vars.chk_var_list1[i][n1].get() == 0):
-		gl_vars.spn_box_list[i][n1][1].grid_forget()   #***# This requires changes
+		gl_vars.spn_box_list[i][n1][1].grid_forget() 
 	else:
 		gl_vars.spn_box_list[i][n1][1].grid(row = row_num, column = 2)
 # POST-CONDITION
@@ -391,8 +381,8 @@ def openWindow(org):
 		ent1 = tk.Entry(window, textvariable = varSaveName)
 		def plotSelect(event, a, b):
 			nonlocal l1, l2, l3, l4, om1, sb1, sb2, cb1, chb1
-			org = varRadio.get()
-			if (org == 0):
+			var_t = varRadio.get()
+			if (var_t == 0):
 				l1.grid(row = 10, column = 0)
 				om1.grid(row = 10, column = 1)
 				l2.grid(row = 12, column = 0)
@@ -406,7 +396,7 @@ def openWindow(org):
 				chb3.grid_forget()
 				ent1.grid_forget()
 				l5.grid_forget()
-			elif (org == 1):
+			elif (var_t == 1):
 				l1.grid(row = 10, column = 0)
 				om1.grid(row = 10, column = 1)
 				l2.grid_forget()
@@ -423,7 +413,7 @@ def openWindow(org):
 				varShow.set(1)
 				varSaveName.set("default")
 				# More options wrt the animation can be added here.
-			elif (org == 2):
+			elif (var_t == 2):
 				l1.grid_forget()
 				om1.grid_forget()
 				l2.grid(row = 12, column = 0)
@@ -439,7 +429,7 @@ def openWindow(org):
 				ent1.grid_forget()
 				l5.grid_forget()
 				# add mods for color selection, maybe even make user-chosen projection style?
-			elif(org == 3):
+			elif(var_t == 3):
 				l1.grid_forget()
 				om1.grid_forget()
 				l2.grid_forget()
@@ -474,13 +464,30 @@ def openWindow(org):
 				plac_ind = None
 			org = varRadio.get()
 			if (org == 0):
-				pfunc.plotMapShape(i,var_name, t1, filename, plac_ind, proj_string)
+
+				xds, lon_var, lat_var, geometries = ffunc.getShapeData(i, var_name, t1, filename, plac_ind)
+				pfunc.plotMapShape(proj_string, xds, lon_var, lat_var, geometries)
 			elif (org == 1):
-				pfunc.animation(i,var_name,(t1,t2), filename, plac_ind, proj_string,show, save, save_name)
+				pfunc.animation(t2-t1, proj_string,show, save, save_name, ffunc.animate_aux(i,var_name, t1, filename, plac_ind))
 			elif (org == 2):
-				pfunc.vectorMap(i,t1, filename, plac_ind, proj_string)
+				xds1, lon_var, lat_var, geometries = ffunc.getShapeData(i, 'u10', t1, filename, plac_ind)
+				xds2, lon_var, lat_var, geometries = ffunc.getShapeData(i, 'v10', t1, filename, plac_ind)
+				lon_arr = np.sort(((np.array(gl_vars.data[i].coords[lon_var]) + 180) % 360) -180)
+				lat_arr = np.array(gl_vars.data[i].coords[lat_var])
+				u_arr = np.array(xds1)
+				v_arr = np.array(xds2)
+				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+				pfunc.vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity)
 			elif (org == 3):
-				pfunc.vectorAnim(i,(t1,t2),filename, plac_ind, proj_string,show, save, save_name)
+				getU,getV = ffunc.animate_aux(i,'u10',t1,filename,plac_ind), ffunc.animate_aux(i,'v10',t1,filename,plac_ind)
+				xds1, lon_var, lat_var, geometries = getU(0)
+				xds2, lon_var, lat_var, geometries = getV(0)
+				lon_arr = np.sort(((np.array(gl_vars.data[i].coords[lon_var]) + 180) % 360) -180)
+				lat_arr = np.array(gl_vars.data[i].coords[lat_var])
+				u_arr = np.array(xds1)
+				v_arr = np.array(xds2)
+				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
+				pfunc.vectorAnim(t2-t1, proj_string,show, save, save_name, getU,getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_range)
 		
 		varRadio.trace("w", plotSelect)
 		varRadio.set(0)
@@ -713,9 +720,11 @@ def plotGenerator():
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	window = tk.Toplevel(gl_vars.root)
 	time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
-	tk.Label(window, text = "Start time: ").grid(row = 0, column = 0)
+	tk.Label(window, text = "Time range: ").grid(row = 0, column = 0)
 	varSpin = tk.StringVar(window)
+	varSpin_o = tk.StringVar(window)
 	tk.Spinbox(window, values = time_range, textvariable = varSpin).grid(row = 0, column = 1)
+	tk.Spinbox(window, values = time_range, textvariable = varSpin_o).grid(row = 0, column = 2)
 	tk.Label(window, text = "Select time interval for x axis: ").grid(row = 1, column = 0)
 	varSpin1 = tk.StringVar(window)
 	varSpin2 = tk.StringVar(window)
@@ -833,22 +842,23 @@ def plotGenerator():
 
 	def dataPlot():
 		start_time_index = time_range.index(varSpin.get())
+		end_time_index = time_range.index(varSpin_o.get())
 		time_interval = (int(varSpin1.get()), varSpin2.get())
 		variables = [key for key,value in var_var.items() if value.get() == 1]
 		if (val_filt.get() == 0):
-			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables)
+			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, end_time_index, time_interval, variables)
 		elif(val_filt.get() == 1):
 			lat_r = [lat_arr2.index(spn_box1.get()),lat_arr2.index(spn_box2.get())]
 			lon_r = [lon_arr2.index(spn_box3.get()),lon_arr2.index(spn_box4.get())]
 			lat_r.sort()
 			lon_r.sort()
-			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
+			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, end_time_index, time_interval, variables, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
 		elif(val_filt.get() == 2):
 			if(plc_var.get() == "ALL"):
 				plac_ind = None
 			else:
 				plac_ind = places.index(plc_var.get())
-			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, time_interval, variables, filt = "shapefile", filename = filename, place = plac_ind)
+			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, end_time_index, time_interval, variables, filt = "shapefile", filename = filename, place = plac_ind)
 		pfunc.plotLines(output_mean, output_std, time_array, variables)
 	
 	b1.config(command = dataPlot)

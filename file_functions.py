@@ -220,10 +220,11 @@ def getStats(ind, year_start, chk_status, variables):
 		final[a] = (np.nanmean(output[a]), np.nanstd(output[a]), np.nanmax(output[a]), np.nanmin(output[a]))
 	return final
 
-def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_range = None, lon_range = None, filename = None, place = None):
+def plotData(ind, start_time_index, end_time_index, time_interval, variables, filt = None, lat_range = None, lon_range = None, filename = None, place = None):
 	dataSet = gl_vars.data[ind]
 	time_list = [pd.to_datetime(a).date() for a in list(dataSet.variables['time'].values)]
 	startTime = time_list[start_time_index]
+	endTime = time_list[end_time_index]
 	if (time_interval[1] == "years"):
 		kwargs = {"years" : time_interval[0]}
 	if (time_interval[1] == "months"):
@@ -246,6 +247,8 @@ def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_r
 	for a in time_list:
 		if (a<startTime):
 			continue
+		if (a>endTime):
+			break
 		if (a<curr_lim):
 			flag = True
 			for b in variables:
@@ -280,10 +283,26 @@ def plotData(ind, start_time_index, time_interval, variables, filt = None, lat_r
 				elif(filt == "shapefile"):
 					temp[b] = [np.array(getShapeData(ind, b, time_list.index(a), filename, place)[0])]	
 			flag = False
-	if(flag):
+	if(len(temp[variables[0]]) != 0):
 		time_array.append(curr_lim-time_step)
 		for b in variables:
 			arr_temp = np.array(temp[b])
 			output_mean[b].append(np.nanmean(arr_temp))
 			output_std[b].append(np.nanstd(arr_temp))
 	return (output_mean, output_std, time_array)
+
+def animate_aux(ind,var_name, time, shpfile, plac_ind):
+	return lambda i: getShapeData(ind,var_name, time + i, shpfile, plac_ind)
+
+def combineFiles(filenames, indxs):
+	data_mod = [gl_vars.data[a] for a in indxs]
+	merged = xr.merge(data_mod)
+	filenames2 = [a for a in filenames if a not in indxs]
+	copy = dict()
+	for a in filenames2:
+		copy[a] = gl_vars.data[a]
+	newName =var.get()
+	copy[newName] = merged
+	gl_vars.data = copy
+	filenames2.append(newName)
+	return filenames2
