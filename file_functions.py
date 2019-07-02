@@ -1,6 +1,35 @@
-# file_functions.py #
+"""This contains the primary functions used for opening files and 
+manipulating the data contained within them.
 
-import gl_vars
+The functions defined here can be used to get and manipulate data. For 
+the purpose of the project, these functions have been called 
+specifically in driver.py and gui_functions.py.
+
+Routine Listing
+--------------- 
+openNETCDF,
+getData,
+getSelectedMessage,
+getOutputMessage,
+getShapeData,
+applyShape,
+getStats,
+plotData,
+animate_aux,
+combineFiles
+
+See Also
+--------
+gui_functions
+plot_functions
+driver
+
+"""
+
+from typing import List,Tuple
+
+import datetime
+from dateutil.relativedelta import *
 
 import xarray as xr
 # Used for manipulation of netCDF files and the data within them.
@@ -11,109 +40,255 @@ import pandas as pd
 import geopandas as gpd
 # Used for some data manipulation
 
-import fiona
 import shapely.geometry as sgeom
 from rasterio import features
 from affine import Affine
 # Used for SHAPEFILES
 
-import datetime
-from dateutil.relativedelta import *
 # TODO:
 #		Correct a few errors specifically mentioned.
 #		Exception, handling and fool-proofing.
 
-# PRE-CONDITION
-#	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
-def openNETCDF(filenames):
+def openNETCDF(filenames: List[str]):
+	r"""Opens the files given as arguments.
+
+	Wrapper around an xarray function to open NetCDF files. Opens the
+	 files specified in `filenames`.
+
+	Parameters
+	----------
+	filenames : array_like
+		List of strings of filenames (with path).
+
+	Returns
+	-------
+	dict
+		A Python dictionary with filenames (without path) as keys and 
+		opened xarray datasets as values.
+
+	See Also
+	--------
+	xarray.Dataset: Type of values in returned dictionary.
+	xarray.open_dataset : Function used internally.
+
+    """
 	out = dict()
 	for i in filenames:
-		i_mod = i.split('/')[-1]
+		i_mod= i.split('/')[-1]
 		out[i_mod] = xr.open_dataset(i)
 	return out
-# POST-CONDITION
-#	return value: an array containing xarray DataFrames, each corresponding to one NETCDF file.
 
-# PRE-CONDITION
-#	ind: the index of the current page.
-#	org: Selects the mode of operation. 0 signifying the use of all the data, 1 signifying the use of masked data (provided as an argument).
-#	args: Additional arguments that may be supplied. In this case, in mode 0, it is the variable name (as a string), if None, all variables are selected. In mode 1, it is the masked data in the form of a xarray DataFrame.
-#	gl_vars.data must be initialised before function call.
-def getData(ind, org, *args):
-	dimension_list = list(gl_vars.data[ind].coords.keys())
-	sel_message, mess_ind_2 = getSelectedMessage(ind)
-	if (org == 0):
-		if (args[0] is None):
-			output_message = getOutputMessage(ind, mess_ind_2, args[0])
+def getData(dataset, msgs,outVar, variable = None, masked_data = None):
+	r"""Retrieves the data specified by the user.
+
+	The function internally calls `getSelectedMessage` and 
+	`getOutputMessage` to receieve the data. Depending on arguments, 
+	the output message (return value) may vary.
+
+	Parameters
+	----------
+	dataset: xarray Dataset
+		The dataset from which data is to be retrieved. 
+	msgs: dict
+		A dictionary with dimension names as keys and lists 
+		containing indices of the chosen variables as values.
+	outVar: dict
+		A dictionary with dimension names as keys and a bool as value. 
+	variable: str, optional
+		Name of variable for which data is to be retrieved. Defaults to None.
+		Ignored if masked_data is specified.
+	masked_data: dict, optional
+		Masked dataset to be used. Stored as a dictionary with variable
+		 names as keys. Defaults to None.
+
+	Returns
+	-------
+	sel_message: str
+		A string containing the selected points/ranges of parameters.
+		Initialised using call to getSelectedMessage.
+	output_message: str or xarray.Dataset
+		Output depends on mode. It is either a string containing the 
+		retrieved data or the retrieved data. More info in Notes.
+	
+	Notes
+	-----
+	Modes of operation
+
+	| 1. If masked_data is specified, that dataset is used for retrieval of the messages required. Output is in the form of a string.
+	| 2. If masked_data is not specified, and variable is specified. Dataset for that variable is fetched and returned, after bounds are applied.
+	| 3. If neither masked_data nor variable are specified, variables specified by outVar are queried. 
+
+	See Also
+	--------
+	xarray.Dataset
+	getSelectedMessage
+	getOutputMessage
+
+    """
+	sel_message, mess_ind_2 = getSelectedMessage(dataset, msgs)
+	if (masked_data is None):
+		if (variable is None):
+			output_message = getOutputMessage(dataset, mess_ind_2, outVar)
 		else:
-			var_name = args[0]
-			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[var_name].dims])
-			output_message = gl_vars.data[ind].variables[var_name][out_ind]
-	elif(org == 1):
-		output_message = getOutputMessage(ind, mess_ind_2, args[0])
+			out_ind = tuple([mess_ind_2[a] for a in dataset.variables[variable].dims])
+			output_message = dataset.variables[variable][out_ind]
+	else:
+		output_message = getOutputMessage(dataset, mess_ind_2, outVar, masked_data = masked_data)
 	return sel_message, output_message
-# POST-CONDITION
-#	return value: a 2-tuple. The first element is a string containing the message with selected data ranges. The second is a string containing the output ranges, except when a single variable name is provided in mode 1, in that case, it returns the entire xarray DataArray.
 
-# PRE-CONDITION
-#	ind: The index of the page currently active, from which data is to be retrieved.
-#	gl_vars.data and gl_vars.messages need to have been initialized before function call.
-def getSelectedMessage(ind):
-	dimension_list = list(gl_vars.data[ind].coords.keys())
+def getSelectedMessage(dataset, msgs):
+	r"""Creates a string containing the bounds selected by the user.
+
+	The function takes in a dictionary of indices and converts it to a 
+	string format and a dictionary of slices, which can then be fed as 
+	array indices. 
+
+	Parameters
+	----------
+	dataset: xarray Dataset
+		The dataset from which data is to be retrieved.
+	msgs: dict
+		Contains a dictionary with dimension names as keys and lists 
+		containing indices of the chosen variables as values.
+
+	Returns
+	-------
+	sel_message: str
+		A string containing the selected points/ranges of parameters.
+	mess_ind_2: dict
+		A dictionary with the dimensions as keys and the index or slice
+		of indices as values. This object is passed to 
+		getOutputMessage to finally retrieve the data.
+	
+	See Also
+	--------
+	getData
+	getOutputMessage
+
+	"""
+	dimension_list = list(dataset.coords.keys())
 	mess_ind = dict()
 	mess_ind_2 = dict()
 	sel_message = "You have selected:\n"
 	for x in dimension_list:
-		arr = [str(a) for a in gl_vars.data[ind].variables[x].values]
-		if (a == "time"):
-			arr = [str(pd.to_datetime(a).date()) for a in gl_vars.data[i].variables[a].values]
-		mess_ind[x] = [arr.index(gl_vars.messages[x][0])]
-		sel_message += x + ' ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][0]])
-		if (gl_vars.messages[x][1] is not None):
-			mess_ind[x].append(arr.index(gl_vars.messages[x][1]))
-			sel_message += ' : ' + str(gl_vars.data[ind].variables[x].values[mess_ind[x][1]])
+		arr = [str(a) for a in dataset.variables[x].values]
+		mess_ind[x] = [arr.index(msgs[x][0])]
+		sel_message += x + ' ' + str(dataset.variables[x].values[mess_ind[x][0]])
+		if (msgs[x][1] is not None):
+			mess_ind[x].append(arr.index(msgs[x][1]))
+			sel_message += ' : ' + str(dataset.variables[x].values[mess_ind[x][1]])
 			mess_ind[x].sort()
 			mess_ind_2[x] = slice(mess_ind[x][0],mess_ind[x][1]+1)
 		else:
 			mess_ind_2[x] = mess_ind[x][0]
 		sel_message += '\n'
 	return sel_message, mess_ind_2
-# POST-CONDITION
-#	return value: a 2-tuple containing a string with a message containing the data ranges selected and a list containing the actual ranges (as slices)/values (as integers) that can be fed as array indices to retrieve the data.
 
-# PRE-CONDITION
-#	ind: the index of the current page
-#	mess_ind_2: A list containing the output ranges, either as values (integers) or slices.
-#	org: specifies the mode of operation. If None, we use all the data. Otherwise, it is expected that org contains the masked data, in the form of a list.
-def getOutputMessage(ind, mess_ind_2, org):
-	variable_list = list(gl_vars.data[ind].data_vars.keys())
-	dimension_list = list(gl_vars.data[ind].coords.keys())
-	ord_arr = None
+def getOutputMessage(dataset, mess_ind_2, outVar, masked_data = None):
+	r"""Returns a string containing the output data.
+
+	The function takes in the ranges and output variables required and 
+	generates a string with data in the form of nested arrays. The 
+	string also contains the mean and std deviation for each variable.
+
+	Parameters
+	----------
+	dataset: xarray Dataset
+		The dataset from which data is to be retrieved.
+	mess_ind_2: dict
+		A dictionary with the dimensions as keys and the index or slice
+		of indices as values. This object is generated by  
+		getSelectedMessage.
+	outVar: dict
+		A dictionary with dimension names as keys and a bool as value.
+	masked_data: dict, optional
+		Masked dataset to be used. Stored as a dictionary with variable
+		names as keys. Defaults to None.
+
+	Returns
+	-------
+	output_message: str
+		A string containing the output data with some statistics.
+	
+	See Also
+	--------
+	getData
+	getSelectedMessage
+
+    """
+
+	variable_list = list(dataset.data_vars.keys())
 	output_message = ""
 	for x in variable_list:
-		if(org == None):
-			test_array = gl_vars.data[ind].variables[x].values
+		if(masked_data is None):
+			test_array = dataset.variables[x].values
 		else:
-			test_array = np.array(org[x])
-		if(gl_vars.outVar[x]):
-			out_ind = tuple([mess_ind_2[a] for a in gl_vars.data[ind].variables[x].dims])
+			test_array = np.array(masked_data[x])
+		if(outVar[x]):
+			out_ind = tuple([mess_ind_2[a] for a in dataset.variables[x].dims])
 			temp = test_array[out_ind]
 			output_message += x + '\n' + str(temp) +'\nMean: '+str(np.nanmean(temp))+' Standard Deviation: '+str(np.nanstd(temp))+'\n'
 	return output_message
-# POST-CONDITION
-#	return value: A string containing the output data, ready for display, along with the mean and standard deviations.
 
-# PRE-CONDITION
-#	ind: The index of the current page as an integer
-#	var_name: The name of the output variable in question as a string. If None, all are iterated through.
-#	time_index: The index of the time of required data as an integer. If None, all are iterated through
-#	shpfile: The name of the shapefile as a string. If None, no filters are aplied to the map.
-#	plac_ind: An integer specifying the shape that is finally selected. As of now, it is an integer, should be made an array in the future. None implies all shapes selected.
-#	gl_vars.data should have been initialised before function call.
-def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
+def getShapeData(xds, var_name: str, time_index: int, shpfile: str, plac_ind: int):
+	r"""Returns data and some auxiliary information after applying a ShapeFile filter.
+
+	This function takes in a dataset and applies a Shapefile filter to 
+	the data. Some specific inputs can result in distinct behaviour and
+	is discussed under Notes. This function calls applyShape.
+
+	Parameters
+	----------
+	xds: xarray Dataset
+		The dataset from which data is to be retrieved.  
+	var_name: str
+		Variable name. None if all are selected.
+	time_index: int
+		The index if the time for which data is to be retrieved. None 
+		if all are selected. 
+	shpfile: str
+		The name of the shapefile in use.
+	plac_ind: int
+		The index of the geometry being selected. None if all are selected.
+
+	Returns
+	-------
+	out: dataset or dict or numpy.array
+		The output data. The type depends on the parameters passed to 
+		the function. More information in Notes
+	lon_var: str
+		The variable corresponding to the longitude dimension.
+	lat_var: str
+		The variable corresponding to the latitude dimension. 
+	geometries: array_like
+		A list containing the geometries generated by the shape file.
+		
+	Notes
+	-----
+	Behaviour of the Function
+
+	The data passed in `xds`, must contain unique variables beginning 
+	with 'lat' and 'lon' corresponding to latitude and longitude for 
+	the function to work.
+
+	If a `shapefile` has not been specified, no filters are applied and
+	the unmasked data is returned. `geometries` is set to None.
+
+	If a `shapefile` has been specified, and both `time_index` and 
+	`var_name` have been specified, the appropriate filters are applied
+	and a numpy array containing the masked data is returned.
+
+	If `shapefile` has been specified, but either one of `time_index` 
+	and	`var_name` were not, then shapefile masked data for all 
+	variables across all avaiable time periods is returned as a dict
+	with variable names as keys and lists of data as values.
+
+	See Also
+	--------
+	applyShape
 	
+    """	
 	lon_var, lat_var = None, None
-	xds = gl_vars.data[ind]
 	for a in list(xds.dims):
 		if (a.lower().startswith("lon")):
 			lon_var = a
@@ -128,16 +303,16 @@ def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
 		da1 = da1.sortby(da1[lon_var])
 		geometries = None
 		out = da1
-	elif(time_index  is not None and var_name is not None):
+	elif(time_index is not None and var_name is not None):
 		da1 =  xds.data_vars[var_name][time_index,:,:]   #THIS IS WRONG. NEEDS TO BE READ FROM NC DATA
 		da1 = da1.sortby(da1[lon_var])
 		raster, geometries = applyShape(da1, lat_var, lon_var, shpfile, plac_ind)
 		spatial_coords = {lat_var: da1.coords[lat_var], lon_var: da1.coords[lon_var]}
 		da1[var_name] = xr.DataArray(raster, coords=spatial_coords, dims=(lat_var, lon_var))
-		out =  da1.where(~np.isnan(da1[var_name]),other = np.nan)
+		out =  da1.where(~np.isnan(da1[var_name]), other = np.nan)
 	else:
 		fin_arr = dict()
-		for a in list(gl_vars.data[ind].data_vars):
+		for a in list(xds.data_vars):
 			out_arr = []
 			da1 =  xds.data_vars[a][:]
 			da1 = da1.sortby(da1[lon_var])
@@ -146,31 +321,60 @@ def getShapeData(ind, var_name, time_index, shpfile, plac_ind):
 				da_1 = da1[c,:,:]
 				spatial_coords = {lat_var: da_1.coords[lat_var], lon_var: da_1.coords[lon_var]}
 				da_1[a] = xr.DataArray(raster, coords=spatial_coords, dims=(lat_var, lon_var))
-				out_arr.append(da_1.where(~np.isnan(da_1[a]),other = np.nan).values)
+				out_arr.append(da_1.where(~np.isnan(da_1[a]), other = np.nan).values)
 			fin_arr[a] = out_arr
 		out = fin_arr
 	return out, lon_var, lat_var, geometries
-# POST-CONDITION
-#	return variables: out is the xarray DataArray (or a list of it), ready for plotting or further processing.
-#					lon_var and lat_var are the strings which are the names of the variables corresponding to latitude and longitude in the NETCDF file in question.
-#					geometries is the list containing the shapes selected. If no shapefile was used, it is None.
 
-# PRE-CONDITION
-#	da1: The data (as an xarray DataArray) on which the masking needs to take place.
-#	lat_var and lon_var: Strings with the name of the latitude variable and longitude vatiable in the NETCDF file
-#	shpfile: The name of the shapefile to be used as a string.
-#	plac_ind: The integer index of the selected shape. If None, all are selected.
-def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
-	test = gpd.read_file(shpfile)
-	with fiona.open(shpfile) as records:
-		geometries = [sgeom.shape(shp['geometry']) for shp in records]
-	shapes = [(shape, n) for n,shape in enumerate(test.geometry)]
+def applyShape(da1, lat_var: str, lon_var: str, shpfile: str, plac_ind: int, lat_r = None, lon_r = None):
+	r"""Returns data and some auxiliary information after applying a ShapeFile filter.
+
+	This function takes in a dataset and applies a Shapefile filter to 
+	the data. Some specific inputs can result in distinct behaviour and
+	is discussed under Notes. This function calls applyShape.
+
+	Parameters
+	----------
+	da1: xarray Dataset or numpy.array
+		The dataset from which data is to be retrieved.  
+	lat_var: str
+		The variable corresponding to the latitude dimension. 
+	lon_var: str
+		The variable corresponding to the longitude dimension. 
+	shpfile: str
+		The name of the shapefile in use.
+	plac_ind: int
+		The index of the geometry being selected. None if all are selected.
+	lat_r: array_like, optional
+		The range of latitudes. Required if passing a numpy array.
+	lon_r: array_like, optional
+		The range of longitudes. Required if passing a numpy array.
+
+	Returns
+	-------
+	raster: array_like
+		Raster object created using rasterio.features.rasterize
+	geometries: array_like
+		A list containing the geometries generated using shapely.
+
+	See Also
+	--------
+	shapely.geometry.shape
+	rasterio.features.rasterize
+	Affine.translation
+	Affine.scale
+
+	"""	
+
+	open_file = gpd.read_file(shpfile)	
+	shapes = [(shape, n) for n,shape in enumerate(open_file.geometry)]
+	geometries = [sgeom.shape(a[0]) for a in shapes]
 	try:
 		lat = np.asarray(da1.coords[lat_var])
 		lon = np.asarray(da1.coords[lon_var])
 	except:
-		lat = np.asarray(gl_vars.data[list(gl_vars.data.keys())[0]].coords[lat_var])
-		lon = np.asarray(gl_vars.data[list(gl_vars.data.keys())[0]].coords[lon_var])		
+		lat = np.asarray(lat_r)
+		lon = np.asarray(lon_r)		
 	trans = Affine.translation(lon[0], lat[0])
 	scale = Affine.scale(lon[1]- lon[0], lat[1] - lat[0])
 	transform = trans*scale
@@ -184,12 +388,41 @@ def applyShape(da1, lat_var, lon_var, shpfile, plac_ind):
 		shape_i = shapes
 	raster = features.rasterize(shape_i, out_shape=out_shape, fill = np.nan, transform = transform, dtype=float)
 	return raster, geometries
-# POST-CONDITION
-#	return values: raster is a feature which can be used to mask the data.
-#					geometries contains the shapes selected as a list.
 
-def getStats(ind, year_start, chk_status, variables):
-	dataSet = gl_vars.data[ind]
+def getStats(dataSet, year_start: int, chk_status: List[int], variables: List[str]):
+	r"""Retrieves statistics for data from specifc periods.
+
+	This function takes in information about the times for which the 
+	data is requested and outputs the statistics for each variable.
+
+	Parameters
+	----------
+	dataSet: xarray Dataset
+		The dataset from which data is to be retrieved.  
+	year_start: int
+		The base year. If None, it is operating in month mode.
+	chk_status: array_like or dict
+		In year mode, it expects a list of boolean values. In month 
+		mode, it expects a dictionary of dictionary of boolean values, 
+		with year being the key for the outer dictionary and month, for
+		the inner dictionary.
+	variables: array_like
+		The list of variable names (as strings) that are being queried. 
+
+	Returns
+	-------
+	final: dict
+		A dictionary where the keys are the variable names and the
+		values are tuples with the required statistics.
+
+	See Also
+	--------
+	numpy.nanmean
+	numpy.nanstd
+	numpy.nanmax
+	numpy.nanmin
+
+	"""	
 	output = dict()
 	final = dict()
 	months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -199,17 +432,18 @@ def getStats(ind, year_start, chk_status, variables):
 	if (year_start is not None):
 		year_set = set([])
 		for a in range(len(chk_status)):
-			if (chk_status[a] == 1):
+			if (chk_status[a]):
 				year_set.add(year_start+a) 
 		for a in time_list:
 			if a.year in year_set:
 				for b in variables:
+					#THIS presumes that it has only three dimensions which is not true.
 					output[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
 	else:
 		time_set = set([])
 		for year in list(chk_status.keys()):
 			for mon in months:
-				if (chk_status[year][mon] == 1):
+				if (chk_status[year][mon]):
 					time_set.add(str(year)+"_"+str(1 + months.index(mon)))
 		for a in time_list:
 			if (str(a.year)+"_"+str(a.month)) in time_set:
@@ -220,8 +454,60 @@ def getStats(ind, year_start, chk_status, variables):
 		final[a] = (np.nanmean(output[a]), np.nanstd(output[a]), np.nanmax(output[a]), np.nanmin(output[a]))
 	return final
 
-def plotData(ind, start_time_index, end_time_index, time_interval, variables, filt = None, lat_range = None, lon_range = None, filename = None, place = None):
-	dataSet = gl_vars.data[ind]
+def plotData(dataSet, start_time_index: int, end_time_index: int, time_interval: Tuple[int,str], variables: List[str], filt = None, lat_range = None, lon_range = None, filename = None, place = None):
+	r"""Retrieves data required for plotting time series graphs.
+
+	This function generates the data required to plot graphs for 
+	variables in a discrete user-specified time interval, taking 
+	average over each smaller user-specified period. The data used can
+	be masked, or bounded by using the right keyword arguments. Uses
+	a call to getShapeData for shapefile bounds.
+
+	Parameters
+	----------
+	dataSet: xarray Dataset
+		The dataset from which data is to be retrieved.  
+	start_time_index: int
+		The index for the first time on the graph.
+	end_time_index: int
+		The index for the last time on the graph.
+	time_interval: tuple
+		This needs to be a tuple with an integer specifying a number 
+		and a string specifying the time period, namely 'years', 
+		'months', or 'days'.
+	variables: array_like
+		The list of variable names (as strings) that are being queried.
+	filt: str,optional
+		If None (default), no filters are used.
+		If "bounds", then lat-lon bounds are used.
+		If "shapefile", then a shapefile geometry is used.
+	lat_range: slice
+		A slice containing the index bounds for latitude. Required for 
+		"bounds" mode, ignored in others.
+	lon_range: slice
+		A slice containing the index bounds for longitude. Required for
+		"bounds" mode, ignored in others.
+	filename: str
+		The name of the shapefile being used. Required for "shapefile"
+		mode, ignored in others.
+	place: int
+		The index of the place being selected. None, in case of all.
+		Required for "shapefile" mode, ignored in others.
+
+	Returns
+	-------
+	tuple
+		A tuple of two dictionaries, one with data, one with error and
+		a list containing the time intervals. The dictionaries have 
+		variable names as keys and a list of data as values.
+
+	See Also
+	--------
+	numpy.nanmean
+	numpy.nanstd
+	dateutil.relativedata
+
+	"""	
 	time_list = [pd.to_datetime(a).date() for a in list(dataSet.variables['time'].values)]
 	startTime = time_list[start_time_index]
 	endTime = time_list[end_time_index]
@@ -234,7 +520,6 @@ def plotData(ind, start_time_index, end_time_index, time_interval, variables, fi
 	time_step = relativedelta(**kwargs)
 
 	curr_lim = startTime+time_step
-	curr_data_set = []
 	output_mean = dict()
 	output_std = dict()
 	temp = dict()
@@ -257,7 +542,7 @@ def plotData(ind, start_time_index, end_time_index, time_interval, variables, fi
 				elif(filt == "bounds"):
 					temp[b].append(np.array(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range]))
 				elif(filt == "shapefile"):
-					temp[b].append(np.array(getShapeData(ind, b, time_list.index(a), filename, place)[0]))
+					temp[b].append(np.array(getShapeData(dataSet, b, time_list.index(a), filename, place)[0]))
 		else:
 			if(flag):
 				time_array.append(curr_lim-time_step)
@@ -281,7 +566,7 @@ def plotData(ind, start_time_index, end_time_index, time_interval, variables, fi
 				elif(filt == "bounds"):
 					temp[b] = [np.array(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range])]
 				elif(filt == "shapefile"):
-					temp[b] = [np.array(getShapeData(ind, b, time_list.index(a), filename, place)[0])]	
+					temp[b] = [np.array(getShapeData(dataSet, b, time_list.index(a), filename, place)[0])]	
 			flag = False
 	if(len(temp[variables[0]]) != 0):
 		time_array.append(curr_lim-time_step)
@@ -291,18 +576,97 @@ def plotData(ind, start_time_index, end_time_index, time_interval, variables, fi
 			output_std[b].append(np.nanstd(arr_temp))
 	return (output_mean, output_std, time_array)
 
-def animate_aux(ind,var_name, time, shpfile, plac_ind):
-	return lambda i: getShapeData(ind,var_name, time + i, shpfile, plac_ind)
+def animate_aux(dataset, var_name: str, time: int, shpfile: str, plac_ind: str):
+	r"""Used to generate a function used in the animate functions.
 
-def combineFiles(filenames, indxs):
-	data_mod = [gl_vars.data[a] for a in indxs]
+	This function returns a function which takes a integer as an index
+	offset and returns the same output as getShapeData.
+
+	Parameters
+	----------
+	dataset: xarray Dataset
+		The dataset from which data is to be retrieved.  
+	var_name: str
+		Variable name. None if all are selected.
+	time: int
+		The index of the base time. 
+	shpfile: str
+		The name of the shapefile in use.
+	plac_ind: int
+		The index of the geometry being selected. None if all are selected.
+	Returns
+	-------
+	callable
+		A function which accepts an integer as a time index offset.
+
+	"""
+	return lambda i: getShapeData(dataset,var_name, time + i, shpfile, plac_ind)
+
+def combineFiles(dataSet, filenames: List[str], indxs: List[int], newName) -> List[str]:
+	r"""Combines compatible NETCDF files.
+
+	The functions combines specified files into a merged dataset.
+	Modifies both the dataset and the filename array. As of now,
+	the function does not check for compatibility.
+
+	Parameters
+	----------
+	dataSet: xarray Dataset
+		The dataset from which data is to be retrieved.  
+	filenames: array_like
+		A list of all existing opened files.
+	indxs: array_like
+		List of indexes of files that need to be combined.
+	newName: str
+		Name of merged dataset.
+	
+	Returns
+	-------
+	copy: xarray Dataset
+		The modified dataset.
+	filenames2: array_like
+		Modified list of files.
+
+	See Also
+	--------
+	xarray.merge
+
+	"""	
+	data_mod = [dataSet[a] for a in indxs]
 	merged = xr.merge(data_mod)
 	filenames2 = [a for a in filenames if a not in indxs]
 	copy = dict()
 	for a in filenames2:
-		copy[a] = gl_vars.data[a]
-	newName =var.get()
+		copy[a] = dataSet[a]
 	copy[newName] = merged
-	gl_vars.data = copy
 	filenames2.append(newName)
-	return filenames2
+	return copy, filenames2
+
+def generateMessage(data_dict):
+	r"""Converts a dictionary of stats to a string.
+
+	The functions takes in a dictionary with variable names as keys and
+	a tuple of stats as values and returns a string containing the same.
+
+	Parameters
+	----------
+	data_dict: dict
+		A dictionary with variable name as key and tuples of (mean, 
+		stddev, max, min) as values.
+
+	Returns
+	-------
+	outMessage: str
+		A string with the stats
+
+	"""	
+
+	outMessage = ""
+	for a in list(data_dict.keys()):
+		outMessage += a + '\n'
+		outMessage += "Mean: " + str(data_dict[a][0]) + '\n' 
+		outMessage += "Std Dev: " + str(data_dict[a][1]) + '\n' 
+		outMessage += "Max: " + str(data_dict[a][2]) + '\n' 
+		outMessage += "Min: " + str(data_dict[a][3]) + '\n' 
+		outMessage += '\n'
+	return outMessage

@@ -1,6 +1,6 @@
 # plot_functions.py #
 
-import gl_vars
+from typing import *
 
 import xarray as xr
 import numpy as np
@@ -25,8 +25,8 @@ from affine import Affine
 # TODO	Plot only in a rectangular/polar range?
 #		Figure out how to modify the size of maps and maybe make it dynamic?
 
-# PRE-CONDITION
-def plotMapShape(proj_string, xds, lon_var, lat_var, geometries):
+
+def plotMapShape(proj_string: str, xds, lon_var: str, lat_var: str, geometries):
 
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
@@ -40,10 +40,8 @@ def plotMapShape(proj_string, xds, lon_var, lat_var, geometries):
 	ax.set_global()
 	fig.text(0,0, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
 	plt.show()
-# POST-CONDITION
-#	The map with the specified variable, time, and shape is plotted in a matplotlib pop-up window.
 
-def getProjection(proj_string):
+def getProjection(proj_string: str):
 	proj_dict = {
 	# ALLOW SELECTION OF PARAMETERS TO THE PROJECTION. RIGHT NOW EVERYTHING IS SET TO DEFAULTS (ESPECIALLY UTM)
 	"PlateCarree": ccrs.PlateCarree(),
@@ -82,7 +80,7 @@ def getProjection(proj_string):
 	}
 	return proj_dict[proj_string]
 
-def animation(length, proj_string, show, save, savename, getDat):
+def animation(length: int, proj_string: str, show: bool, save: bool, savename: str, getDat):
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
 	plt.style.use('seaborn-pastel')
@@ -105,7 +103,7 @@ def animation(length, proj_string, show, save, savename, getDat):
 			cl.set_visible(True)
 		return cl,ax.title
 
-	def animate(i):
+	def animate(i: int):
 		nonlocal  mesh,cl,textvar1
 		xds, lon_var, lat_var, geometries = getDat(i)
 		mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, add_colorbar = False)
@@ -122,12 +120,12 @@ def animation(length, proj_string, show, save, savename, getDat):
 	if(show == 1):
 		message = "Displaying "
 		plt.show()
-	if(save == 1):
+	if(save):
 		message = "Saving "
 		anim.save(savename+'.gif', writer='imagemagick')
 	
 
-def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity):
+def vectorMap(proj_string: str, lon_arr, lat_arr, u_arr, v_arr, velocity):
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string) 
 	plt.clf()
@@ -138,7 +136,7 @@ def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity):
 	plt.colorbar(orientation = 'horizontal')
 	plt.show()
 
-def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_array):
+def vectorAnim(length: int, proj_string: str, show: bool, save: bool, savename: str, getU, getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_array: List[str]):
 	pc = ccrs.PlateCarree() #Later this needs to be user-input.
 	proj = getProjection(proj_string) 
 	fig = plt.figure()
@@ -150,7 +148,7 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,la
 		ax.coastlines()
 		return ax.title
 	
-	def animate(i):
+	def animate(i: int):
 		plt.clf()
 		ax = plt.axes(projection = proj)
 		ax.coastlines()
@@ -164,7 +162,7 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,la
 		print(message+'['+str(i+1)+'/'+str(length+1)+']')
 		if(i == length and show == 1):
 			print("To continue, close current plot window.") 
-		if(save == 1):
+		if(save):
 			plt.savefig("temp"+ str(i).zfill(4)+'.png', dpi = 'figure')
 		plt.draw()
 	
@@ -175,7 +173,7 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,la
 	
 
 	message = "Saving "
-	if(save == 1):
+	if(save):
 		if(show != 1):
 			for i in range(length+1):
 		 		animate(i)
@@ -185,7 +183,7 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,la
 		for i in range(length+1):
 			os.remove("temp"+str(i).zfill(4)+'.png')
 
-def plotLines(output_mean, output_std, time_array, variables):
+def plotLines(output_mean, output_std, time_array, variables: List[str]):
 	x = mdates.date2num(time_array)
 	for b in variables:
 		plt.errorbar(x,output_mean[b], yerr=output_std[b])

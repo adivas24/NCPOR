@@ -4,6 +4,9 @@ import gl_vars
 import file_functions as ffunc
 import plot_functions as pfunc
 
+from typing import *
+
+
 import tkinter as tk
 from tkinter import ttk
 from tkinter import tix
@@ -25,13 +28,9 @@ from datetime import datetime
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
 
-# PRE-CONDITION
-#	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
-#	gl_vars.root and gl_vars.data should be initialized before function call. 
-def getMultiSets(filenames):
+def getMultiSets(filenames: List[str]):
 	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
-	
 	chk_vars = dict()
 	chk_arr = dict()
 
@@ -52,18 +51,12 @@ def getMultiSets(filenames):
 	b1 = tk.Button(gl_vars.root, text = 'Combine')
 	b2 = tk.Button(gl_vars.root, text = 'More (Refresh list)')
 	b3 = tk.Button(gl_vars.root, text = 'Done')
-	# PRE-CONDITION
-	#	gl_vars.data needs to have been initialised earlier.
-	#	var (The text Entry widget) should have a valid string.
+
 	def combine_files():
 		indxs = [a for a in filenames if chk_vars[a].get() == 1]
-		filenames2 = ffunc.combineFiles(filenames, indxs)
-	# POST-CONDITION
-	#	gl_vars.data and filenames2 now contain a smaller list after combining the selected Datasets.
+		gl_vars.data,filenames2 = ffunc.combineFiles(gl_vars.data, filenames, indxs, var.get())
 
 
-	# PRE-CONDITION
-	#	No-prereqs as such. Outer function needs to work and should not form cyclic calls.
 	def getMore():
 		nonlocal l1, l2, b3, b2, b1, text, chk_arr
 		l2.destroy()
@@ -75,12 +68,8 @@ def getMultiSets(filenames):
 		for a in chk_arr.values():
 			a.destroy()
 		getMultiSets(filenames2)
-	# POST-CONDITION
-	#	Cleans the current window and refreshes everything after resetting the filenames.
 
 
-	# PRE-CONDITION
-	#	Outer function should be working. gl_vars.root needs to have been initialised.	
 	def createGUI():
 		nonlocal l1, l2, b2, b3, b1, text, chk_arr
 		l2.destroy()
@@ -107,9 +96,7 @@ def getMultiSets(filenames):
 		for i in gl_vars.chk_var_list1.keys():
 			for j in gl_vars.chk_var_list1[i].keys():
 				gl_vars.chk_var_list1[i][j].trace("w",trig)
-	# POST-CONDITION
-	#	Initializes the first steps towards creating the GUI. Destroys the previous widget setup and creates a notebook, with each page corresponding to the datasets in gl_var.data after combining.
-	# 	Function calls to create and add the pages are done and one set of IntVars (correspoding to the radio buttons) are bound to the function trigger.
+
 	b1.config(command = combine_files)
 	b2.config(command = getMore)
 	b3.config(command = createGUI)
@@ -120,24 +107,14 @@ def getMultiSets(filenames):
 	gl_vars.root.grid_columnconfigure(3, minsize=30)
 	gl_vars.root.grid_columnconfigure(0, minsize=150)
 	gl_vars.root.grid_columnconfigure(4, minsize=150)
-# POST-CONDITION
-#	Initially, a pop-up window to allow the user to combine the selected files is shown. After all the combining, the user can then press a button to generate the next interface of the GUI, which is used to actually retrieve and visualise the data.
-# 	The tkinter notebook is initialised in an inner function.
 
-# PRE-CONDITION
-#	filenames: A list of strings corresponding to each NETCDF file containing the full path of the file.
-#	gl_vars.nb must be initialised before the function call.
-def addPages(filenames):
+def addPages(filenames: List[str]):
 	gl_vars.pages = dict()
 	for i in filenames:
 		gl_vars.pages[i] = ttk.Frame(gl_vars.nb)
 		gl_vars.nb.add(gl_vars.pages[i], text = i)
 	gl_vars.nb.grid(row = 0, column = 0, columnspan=9, sticky = tk.E + tk.W, padx = 5)
-# POST-CONDITION
-#	gl_vars.pages is initialised with Tkinter frame widgets, which are then added to the tkinter Notebook. 
 
-# PRE-CONDITION
-#	gl_vars.chk_var_list1 and gl_vars.spn_box_list need to be initialised before function call.
 def trig(event,b,c):
 	dats = event.split('$')		
 	n1 = dats[2]
@@ -147,11 +124,7 @@ def trig(event,b,c):
 		gl_vars.spn_box_list[i][n1][1].grid_forget() 
 	else:
 		gl_vars.spn_box_list[i][n1][1].grid(row = row_num, column = 2)
-# POST-CONDITION
-#	The specific radio button toggles the visibility of the spinbox.
 	
-# PRE-CONDITION
-#	gl_vars.data and gl_vars.pages need to be initialised before function is called
 def fillPages():
 	xr_dataSet = gl_vars.data
 	no_of_pages = len(gl_vars.pages)
@@ -199,106 +172,55 @@ def fillPages():
 	gl_vars.root.grid_rowconfigure(91, minsize=20)
 	gl_vars.root.grid_rowconfigure(92, minsize=20)
 	gl_vars.root.grid_rowconfigure(93, minsize=20)
-# POST-CONDITION
-#	Each page is filled with Radio-buttons, Spinboxes, Checkboxes, Buttons and appropriate labels.
-#	The global variables, chk_var_list1, chk_var_list2, chk_var_list3, and spn_box_list are initialised. 
 
-# PRE-CONDITION
-#	name: The name of the dimension in question as a string.
-#	num: an integer denoting the row number and index of the variable in the list.
-#	ind: The index of the page (.nc file) as an integer.
-#	gl_vars.pages and gl_vars.chk_var_list1 should have been initialised before function call.
-def createSelRow(name, num, ind):
+def createSelRow(name: str, num: int, ind: str):
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
 	gl_vars.chk_var_list1[ind][name] = tk.IntVar(gl_vars.pages[ind], name = "var$"+ind+ "$" + name + '$' + str(num+5))
 	r1 = tk.Radiobutton(gl_vars.pages[ind], text = 'Single', variable = gl_vars.chk_var_list1[ind][name], value = 0)
 	r1.grid(row = num, column = 1)
 	r2 = tk.Radiobutton(gl_vars.pages[ind], text = 'Range (Inclusive)', variable = gl_vars.chk_var_list1[ind][name], value = 1)
 	r2.grid(row = num, column = 2)
-# POST-CONDITION
-#	Each call of the function generates one label, and two radio buttons which are placed and then deselected.
-#	chk_var_list1 is initialised with actual vars.
 
-# PRE-CONDITION
-#	name: The name of the dimension in question as a string.
-#	num: an integer denoting the row number and index of the variable in the list.
-#	ind: The index of the page (.nc file) as an integer.
-#	value_list: The range of possible values that the variable in question can take in the form of a list.
-#	gl_vars.pages and gl_vars.spn_box_list should have been initialised prior to function call.
-def createSelBox(name, num, ind, value_list):
+def createSelBox(name: str, num: int, ind: str, value_list: List[str]):
 	value_list.sort()
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num+5, column = 0)
 	gl_vars.spn_box_list[ind][name] = [tk.Spinbox(gl_vars.pages[ind]), tk.Spinbox(gl_vars.pages[ind])]
 	gl_vars.spn_box_list[ind][name][0].configure(values=value_list)
 	gl_vars.spn_box_list[ind][name][0].grid(row = num+5, column = 1)
 	gl_vars.spn_box_list[ind][name][1].configure(values=value_list)
-# POST-CONDITION
-#	Each function call creates and places one label and creates two spin boxes with the given range for the given variable.
 
-# PRE-CONDITION
-#	data_var: This is a string with the name of the data variable in question.
-#	ind: The index of the page (.nc file) as an integer.
-#	num: an integer denoting the row number.
-#	num2: an integer denoting the column number
-#	gl_vars.chk_var_list2 and gl_vars.pages need to have been initialised before function call.
-def createCheckBox(data_var, ind, num, num2):
-	gl_vars.chk_var_list2[ind][data_var] = tk.IntVar(gl_vars.pages[ind], name = "var$"+data_var+"$"+ind+"$"+str(num2-1))
+def createCheckBox(data_var: str, ind: str, num: int, num2: int):
+	gl_vars.chk_var_list2[ind][data_var] = tk.BooleanVar(gl_vars.pages[ind], name = "var$"+data_var+"$"+ind+"$"+str(num2-1))
 	tk.Checkbutton(gl_vars.pages[ind], text = data_var, variable = gl_vars.chk_var_list2[ind][data_var]).grid(row = num, column = num2)
-# POST-CONDITION
-#	Each function call creates and places a checkbox in the given page, at the given position, with the appropriate label.
-#	gl_vars.chk_var_list2 is completely initialised with with named tkinter IntVar. Each associated with a checkbox.
+
 def getIndexes():
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	rangeVar = dict()
 	for a in gl_vars.chk_var_list1[i].keys():
 		rangeVar[a] = gl_vars.chk_var_list1[i][a].get()
-	gl_vars.messages = dict()
+	messages = dict()
 	dimension_list = list(gl_vars.data[i].coords.keys())
 	for x in dimension_list:
-		gl_vars.messages[x] = [gl_vars.spn_box_list[i][x][0].get()]
+		messages[x] = [gl_vars.spn_box_list[i][x][0].get()]
 		if(rangeVar[x]):
-			gl_vars.messages[x].append(gl_vars.spn_box_list[i][x][1].get())
+			messages[x].append(gl_vars.spn_box_list[i][x][1].get())
 		else:
-			gl_vars.messages[x].append(None)
-	gl_vars.outVar = dict()
+			messages[x].append(None)
+	outVar = dict()
 	for a in gl_vars.chk_var_list2[i].keys():
-		gl_vars.outVar[a] = gl_vars.chk_var_list2[i][a].get()
+		outVar[a] = gl_vars.chk_var_list2[i][a].get()
+	return messages,outVar
 
-# PRE-CONDITION
-#	gl_vars.nb, gl_vars.spn_box_list, gl_vars.chk_var_list1, and gl_vars.chk_var_list3 need to have been initialised.
-#	Whether gl_vars.output is None or not, will affect the function output. 
-def retrieveData():
-	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
-	getIndexes()
-	if (gl_vars.chk_var_list3[i].get() == 1 and gl_vars.output is None):
-		openPlotWindow(2)
-		return
-	if (gl_vars.chk_var_list3[i].get() == 1):
-		masked_data = gl_vars.output
-		sel_message, output_message = ffunc.getData(i, 1, masked_data)
-		gl_vars.output = None
-	else:
-		sel_message, output_message = ffunc.getData(i, 0, None)
-	printMessages(output_message,sel_message)
-# POST-CONDITION
-#	gl_vars.messages is initialised with the contents of the spinboxes (i.e. the data ranges selected by the user)
-#	gl_vars.outVar is initialised with the state of the checkboxes at the time of button pressing.
-#	The execution of this function will result in retrieval of the selected data, which is then printed through another function call.
 
-# PRE-CONDITION
-#	o_message: This is a string containing the output data.
-#	s_message: This is a string which lists out the selected variable ranges. 
-#	gl_vars.selBox and gl_vars.opBox needs to have been initialised befire function call.
-def printMessages(o_message, s_message):
+def printMessages(o_message: str, s_message: str):
 	gl_vars.selBox.delete(1.0,tk.END)
 	gl_vars.selBox.insert(tk.INSERT, s_message)
 	gl_vars.opBox.delete(1.0,tk.END)
 	gl_vars.opBox.insert(tk.INSERT, o_message)
-# POST-CONDITION
-#	messages are printed in the appropriate Text boxes.
 
-def openWindow(org):
+def openWindow(org: int):
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+	dataset = gl_vars.data[i]
 	window = tk.Toplevel(gl_vars.root)
 	var2 = tk.IntVar(window) # shape file toggle
 	var_list = list(gl_vars.data[i].data_vars.keys())
@@ -352,8 +274,8 @@ def openWindow(org):
 		varn = tk.StringVar(window) # projection selector
 		varSpin1= tk.StringVar(window) #time range1
 		varSpin2 = tk.StringVar(window) # time range 2
-		varSave = tk.IntVar(window) # save file checkbutton
-		varShow = tk.IntVar(window) # show plot checkbutton
+		varSave = tk.BooleanVar(window) # save file checkbutton
+		varShow = tk.BooleanVar(window) # show plot checkbutton
 		varSaveName = tk.StringVar(window) # newfile name
 		var.set(var_list[0])
 		varn.set("PlateCarree")
@@ -465,13 +387,13 @@ def openWindow(org):
 			org = varRadio.get()
 			if (org == 0):
 
-				xds, lon_var, lat_var, geometries = ffunc.getShapeData(i, var_name, t1, filename, plac_ind)
+				xds, lon_var, lat_var, geometries = ffunc.getShapeData(dataset, var_name, t1, filename, plac_ind)
 				pfunc.plotMapShape(proj_string, xds, lon_var, lat_var, geometries)
 			elif (org == 1):
-				pfunc.animation(t2-t1, proj_string,show, save, save_name, ffunc.animate_aux(i,var_name, t1, filename, plac_ind))
+				pfunc.animation(t2-t1, proj_string,show, save, save_name, ffunc.animate_aux(dataset,var_name, t1, filename, plac_ind))
 			elif (org == 2):
-				xds1, lon_var, lat_var, geometries = ffunc.getShapeData(i, 'u10', t1, filename, plac_ind)
-				xds2, lon_var, lat_var, geometries = ffunc.getShapeData(i, 'v10', t1, filename, plac_ind)
+				xds1, lon_var, lat_var, geometries = ffunc.getShapeData(dataset, 'u10', t1, filename, plac_ind)
+				xds2, lon_var, lat_var, geometries = ffunc.getShapeData(dataset, 'v10', t1, filename, plac_ind)
 				lon_arr = np.sort(((np.array(gl_vars.data[i].coords[lon_var]) + 180) % 360) -180)
 				lat_arr = np.array(gl_vars.data[i].coords[lat_var])
 				u_arr = np.array(xds1)
@@ -479,7 +401,7 @@ def openWindow(org):
 				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
 				pfunc.vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity)
 			elif (org == 3):
-				getU,getV = ffunc.animate_aux(i,'u10',t1,filename,plac_ind), ffunc.animate_aux(i,'v10',t1,filename,plac_ind)
+				getU,getV = ffunc.animate_aux(dataset,'u10',t1,filename,plac_ind), ffunc.animate_aux(dataset,'v10',t1,filename,plac_ind)
 				xds1, lon_var, lat_var, geometries = getU(0)
 				xds2, lon_var, lat_var, geometries = getV(0)
 				lon_arr = np.sort(((np.array(gl_vars.data[i].coords[lon_var]) + 180) % 360) -180)
@@ -517,22 +439,24 @@ def openWindow(org):
 			time_t.sort()
 			t3 = slice(time_t[0], time_t[1]+1)
 			if(varBnd.get() == 0):
-				getIndexes()
-				data_arr = ffunc.getData(i,0,var_name)[1]
+				msgs,outVar = getIndexes()
+				dataset = gl_vars.data[i]
+				data_arr = ffunc.getData(dataset,msgs,outVar,variable = var_name)[1]
 				if (filename is not None):
-					temp, lon_var, lat_var, temp2 = ffunc.getShapeData(i, var_name, t1, filename, plac_ind)
-					out = ffunc.applyShape(data_arr, lat_var, lon_var, filename, plac_ind)[0]
+					temp, lon_var, lat_var, temp2 = ffunc.getShapeData(dataset,var_name, t1, filename, plac_ind)
+					lat_rn, lon_rn = dataset.coords[lat_var],dataset.coords[lon_var]
+					out = ffunc.applyShape(data_arr, lat_var, lon_var, filename, plac_ind, lat_r = lat_rn, lon_r = lon_rn)[0]
 				else:
 					out = data_arr
 			elif(varBnd.get() == 1):
 				if (filename is not None):
-					out = [np.array(ffunc.getShapeData(i, var_name, time_t[0], filename, plac_ind)[0])]
+					out = [np.array(ffunc.getShapeData(dataset, var_name, time_t[0], filename, plac_ind)[0])]
 					for time_i in range(time_t[0], time_t[1]):
-						out.append(ffunc.getShapeData(i, var_name, time_i+1, filename, plac_ind)[0]) 
+						out.append(ffunc.getShapeData(dataset,var_name, time_i+1, filename, plac_ind)[0]) 
 					#This segment takes a long long time to execute. Please keep that in mind. Hence, testing is also not thorough.
 					out = np.array(out)
 				else:
-					out = gl_vars.data[i].data_vars[var_name][t3,:,:]
+					out = dataset.data_vars[var_name][t3,:,:]
 			if(varBnd.get() == 0 and filename is not None):
 				resized_array = np.array(out.data)
 			else:
@@ -546,17 +470,14 @@ def openWindow(org):
 		shapeSelect(None,None,None)
 		def printShapeData():
 			nonlocal window
-			masked_data = ffunc.getShapeData(i,None, None, filename, plac_ind)[0]
-			sel_message, output_message = ffunc.getData(i, 1, masked_data)
+			masked_data = ffunc.getShapeData(dataset,None, None, filename, plac_ind)[0]
+			msgs,outVar = getIndexes()
+			sel_message, output_message = ffunc.getData(dataset,msgs,outVar, masked_data = masked_data)
 			printMessages(output_message,sel_message)
 			window.destroy()
 		b1.config(command = printShapeData)
 
 	var2.trace("w", shapeSelect)
-
-	# PRE-CONDITION
-	#	Function is checkbox triggered. Arguments are required dummies.
-	#	gl_vars.root needs to have been initialised at the start.
 
 
 def plotWindow():
@@ -567,11 +488,12 @@ def exportToCSV():
 
 def retrieveData():
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
-	getIndexes()
 	if (gl_vars.chk_var_list3[i].get() == 1):
 		openWindow(2)
 	else:
-		sel_message, output_message = ffunc.getData(i, 0, None)
+		msgs,outVar = getIndexes()
+		dataset = gl_vars.data[i]
+		sel_message, output_message = ffunc.getData(dataset, msgs,outVar)
 		printMessages(output_message,sel_message)
 
 def dataSelector():
@@ -611,16 +533,17 @@ def dataSelector():
 ##########################
 	var_time = tk.IntVar(frame)
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+	dataset = gl_vars.data[i]
 	tk.Label(frame, text = "Select data points by: ").grid(row = 0,column = 0)
 	tk.Radiobutton(frame, variable = var_time, value = 0, text = "Year").grid(row = 0, column = 1)
 	tk.Radiobutton(frame, variable = var_time, value = 1, text = "Month").grid(row = 0, column = 2)
-	time_range = [pd.to_datetime(a).date() for a in list(gl_vars.data[i].variables['time'].values)]
+	time_range = [pd.to_datetime(a).date() for a in list(dataset.variables['time'].values)]
 	time_range.sort()
 	tk.Label(frame, text = "Select variables:" ).grid(row = 20,column = 0)
 	var_var = dict()
 	num = 0
-	for x in list(gl_vars.data[i].data_vars.keys()):
-		var_var[x] = tk.IntVar(frame)
+	for x in list(dataset.data_vars.keys()):
+		var_var[x] = tk.BooleanVar(frame)
 		tk.Checkbutton(frame, text = x, variable = var_var[x]).grid(row = 21, column = num)
 		num += 1
 	chk = []
@@ -631,19 +554,19 @@ def dataSelector():
 	outField = tk.Text(frame, height = 4, width = 5)
 	outField.grid(row = 90, column = 1, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
 	months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-	var_month = [tk.IntVar(frame, name = "all"+"_"+ mon) for mon in months]
+	var_month = [tk.BooleanVar(frame, name = "all"+"_"+ mon) for mon in months]
 	month_label = [tk.Checkbutton(frame, text = months[d], variable = var_month[d]) for d in range(len(months))]
 	year_start = int(time_range[0].year)
 	year_end = int(time_range[-1].year)
-	var_year = [tk.IntVar(frame, name = str(d)+ "_all") for d in range(year_start,year_end+1)]
+	var_year = [tk.BooleanVar(frame, name = str(d)+ "_all") for d in range(year_start,year_end+1)]
 	year_labels = [tk.Checkbutton(frame, text = str(ind+year_start), variable = var_year[ind]) for ind in range(year_end-year_start+1)]
-	var_rad = [tk.IntVar(frame) for ind in range(year_end-year_start+1)]
+	var_rad = [tk.BooleanVar(frame) for ind in range(year_end-year_start+1)]
 	chk = [tk.Checkbutton(frame, text = str(ind+year_start), variable =  var_rad[ind]) for ind in range(year_end-year_start+1)]
 	chk2 = dict()
 	for dra in range(year_start,year_end+1):
 		chk2[str(dra)] = dict()
 		for mon in months:
-			chk2[str(dra)][mon] = [tk.IntVar(frame, name = str(dra)+"_"+mon)]
+			chk2[str(dra)][mon] = [tk.BooleanVar(frame, name = str(dra)+"_"+mon)]
 			chk2[str(dra)][mon].append(tk.Checkbutton(frame, variable =  chk2[str(dra)][mon][0]))
 	def selectGrid(event, b, c):
 		nonlocal var_var, var_rad, chk, year_start, year_end
@@ -670,8 +593,8 @@ def dataSelector():
 					chk2[str(i+year_start)][months[m]][1].grid(row = 2+i, column = m+1)
 	def getStats():
 		nonlocal var_var, var_arr
-		var_arr = [key for key,value in var_var.items() if value.get() == 1]
-		if(var_time.get() == 0):
+		var_arr = [key for key,value in var_var.items() if value.get()]
+		if(not var_time.get()):
 			chk_status = [a.get() for a in var_rad]
 			year_param = year_start
 		else:
@@ -681,9 +604,9 @@ def dataSelector():
 				for mon in months:
 					chk_status[str(dra)][mon] = chk2[str(dra)][mon][0].get()
 			year_param = None
-		outdict = ffunc.getStats(i, year_param, chk_status, var_arr)
+		outdict = ffunc.getStats(dataset, year_param, chk_status, var_arr)
 		outField.delete(1.0,tk.END)
-		outField.insert(tk.INSERT, generateMessage(outdict))
+		outField.insert(tk.INSERT, ffunc.generateMessage(outdict))
 	var_time.trace("w", selectGrid)
 	var_time.set(0)
 
@@ -705,21 +628,12 @@ def dataSelector():
 	for a in var_year:
 		a.trace("w", select)
 
-def generateMessage(data_dict):
-	outMessage = ""
-	for a in list(data_dict.keys()):
-		outMessage += a + '\n'
-		outMessage += "Mean: " + str(data_dict[a][0]) + '\n' 
-		outMessage += "Std Dev: " + str(data_dict[a][1]) + '\n' 
-		outMessage += "Max: " + str(data_dict[a][2]) + '\n' 
-		outMessage += "Min: " + str(data_dict[a][3]) + '\n' 
-		outMessage += '\n'
-	return outMessage
 
 def plotGenerator():
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+	dataset = gl_vars.data[i]
 	window = tk.Toplevel(gl_vars.root)
-	time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
+	time_range = [str(pd.to_datetime(a).date()) for a in list(dataset.variables['time'].values)]
 	tk.Label(window, text = "Time range: ").grid(row = 0, column = 0)
 	varSpin = tk.StringVar(window)
 	varSpin_o = tk.StringVar(window)
@@ -755,10 +669,10 @@ def plotGenerator():
 		if (a.lower().startswith("lat")):
 			lat_var = a
 	
-	lat_arr = list(gl_vars.data[i].variables[lat_var].values)
+	lat_arr = list(dataset.variables[lat_var].values)
 	lat_arr2 = [str(a) for a in lat_arr]
 	lat_arr.sort()
-	lon_arr = list(gl_vars.data[i].variables[lon_var].values)
+	lon_arr = list(dataset.variables[lon_var].values)
 	lon_arr2 = [str(a) for a in lon_arr]
 	lon_arr.sort()
 	lbl1 = tk.Label(window, text = "Latitude Range:")
@@ -833,7 +747,7 @@ def plotGenerator():
 	tk.Label(window, text = "Select variables:" ).grid(row = 20,column = 0)
 	var_var = dict()
 	num = 0
-	for x in list(gl_vars.data[i].data_vars.keys()):
+	for x in list(dataset.data_vars.keys()):
 		var_var[x] = tk.IntVar(window)
 		tk.Checkbutton(window, text = x, variable = var_var[x]).grid(row = 21, column = num)
 		num += 1
@@ -846,19 +760,19 @@ def plotGenerator():
 		time_interval = (int(varSpin1.get()), varSpin2.get())
 		variables = [key for key,value in var_var.items() if value.get() == 1]
 		if (val_filt.get() == 0):
-			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, end_time_index, time_interval, variables)
+			output_mean, output_std, time_array = ffunc.plotData(dataset, start_time_index, end_time_index, time_interval, variables)
 		elif(val_filt.get() == 1):
 			lat_r = [lat_arr2.index(spn_box1.get()),lat_arr2.index(spn_box2.get())]
 			lon_r = [lon_arr2.index(spn_box3.get()),lon_arr2.index(spn_box4.get())]
 			lat_r.sort()
 			lon_r.sort()
-			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, end_time_index, time_interval, variables, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
+			output_mean, output_std, time_array = ffunc.plotData(dataset, start_time_index, end_time_index, time_interval, variables, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
 		elif(val_filt.get() == 2):
 			if(plc_var.get() == "ALL"):
 				plac_ind = None
 			else:
 				plac_ind = places.index(plc_var.get())
-			output_mean, output_std, time_array = ffunc.plotData(i, start_time_index, end_time_index, time_interval, variables, filt = "shapefile", filename = filename, place = plac_ind)
+			output_mean, output_std, time_array = ffunc.plotData(dataset, start_time_index, end_time_index, time_interval, variables, filt = "shapefile", filename = filename, place = plac_ind)
 		pfunc.plotLines(output_mean, output_std, time_array, variables)
 	
 	b1.config(command = dataPlot)
