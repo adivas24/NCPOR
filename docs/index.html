@@ -1,0 +1,771 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Welcome to CDAPack’s documentation! &#8212; CDAPack TBD documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-cdapack-s-documentation">
+<h1>Welcome to CDAPack’s documentation!<a class="headerlink" href="#welcome-to-cdapack-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-file_functions">
+<span id="the-file-functions-module"></span><h2>The “file_functions” module<a class="headerlink" href="#module-file_functions" title="Permalink to this headline">¶</a></h2>
+<p>This contains the primary functions used for opening files and
+manipulating the data contained within them.</p>
+<p>The functions defined here can be used to get and manipulate data. For
+the purpose of the project, these functions have been called
+specifically in driver.py and gui_functions.py.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gui_functions</span></code>, <a class="reference internal" href="#module-plot_functions" title="plot_functions"><code class="xref py py-mod docutils literal notranslate"><span class="pre">plot_functions</span></code></a>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">driver</span></code></p>
+</div>
+<dl class="function">
+<dt id="file_functions.animate_aux">
+<code class="descclassname">file_functions.</code><code class="descname">animate_aux</code><span class="sig-paren">(</span><em>dataset</em>, <em>var_name</em>, <em>time</em>, <em>shpfile</em>, <em>plac_ind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#animate_aux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.animate_aux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to generate a function used in the animate functions.</p>
+<p>This function returns a function which takes a integer as an index
+offset and returns the same output as getShapeData.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataset</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>var_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Variable name. None if all are selected.</li>
+<li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index of the base time.</li>
+<li><strong>shpfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the shapefile in use.</li>
+<li><strong>plac_ind</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index of the geometry being selected. None if all are selected.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A function which accepts an integer as a time index offset.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">callable</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.applyShape">
+<code class="descclassname">file_functions.</code><code class="descname">applyShape</code><span class="sig-paren">(</span><em>da1</em>, <em>lat_var</em>, <em>lon_var</em>, <em>shpfile</em>, <em>plac_ind</em>, <em>lat_r=None</em>, <em>lon_r=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#applyShape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.applyShape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns data and some auxiliary information after applying a ShapeFile filter.</p>
+<p>This function takes in a dataset and applies a Shapefile filter to
+the data. Some specific inputs can result in distinct behaviour and
+is discussed under Notes. This function calls applyShape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>da1</strong> (<em>xarray Dataset</em><em> or </em><em>numpy.array</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>lat_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The variable corresponding to the latitude dimension.</li>
+<li><strong>lon_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The variable corresponding to the longitude dimension.</li>
+<li><strong>shpfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the shapefile in use.</li>
+<li><strong>plac_ind</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index of the geometry being selected. None if all are selected.</li>
+<li><strong>lat_r</strong> (<em>array_like</em><em>, </em><em>optional</em>) – The range of latitudes. Required if passing a numpy array.</li>
+<li><strong>lon_r</strong> (<em>array_like</em><em>, </em><em>optional</em>) – The range of longitudes. Required if passing a numpy array.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>raster</strong> (<em>array_like</em>) – Raster object created using rasterio.features.rasterize</li>
+<li><strong>geometries</strong> (<em>array_like</em>) – A list containing the geometries generated using shapely.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">shapely.geometry.shape()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">rasterio.features.rasterize()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">Affine.translation()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">Affine.scale()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.combineFiles">
+<code class="descclassname">file_functions.</code><code class="descname">combineFiles</code><span class="sig-paren">(</span><em>dataSet</em>, <em>filenames</em>, <em>indxs</em>, <em>newName</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#combineFiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.combineFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>Combines compatible NETCDF files.</p>
+<p>The functions combines specified files into a merged dataset.
+Modifies both the dataset and the filename array. As of now,
+the function does not check for compatibility.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataSet</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>filenames</strong> (<em>array_like</em>) – A list of all existing opened files.</li>
+<li><strong>indxs</strong> (<em>array_like</em>) – List of indexes of files that need to be combined.</li>
+<li><strong>newName</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Name of merged dataset.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>copy</strong> (<em>xarray Dataset</em>) – The modified dataset.</li>
+<li><strong>filenames2</strong> (<em>array_like</em>) – Modified list of files.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">xarray.merge()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.generateMessage">
+<code class="descclassname">file_functions.</code><code class="descname">generateMessage</code><span class="sig-paren">(</span><em>data_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#generateMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.generateMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts a dictionary of stats to a string.</p>
+<p>The functions takes in a dictionary with variable names as keys and
+a tuple of stats as values and returns a string containing the same.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data_dict</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A dictionary with variable name as key and tuples of (mean,
+stddev, max, min) as values.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>outMessage</strong> – A string with the stats</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.getData">
+<code class="descclassname">file_functions.</code><code class="descname">getData</code><span class="sig-paren">(</span><em>dataset</em>, <em>msgs</em>, <em>outVar</em>, <em>variable=None</em>, <em>masked_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#getData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.getData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the data specified by the user.</p>
+<p>The function internally calls <cite>getSelectedMessage</cite> and
+<cite>getOutputMessage</cite> to receieve the data. Depending on arguments,
+the output message (return value) may vary.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataset</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>msgs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A dictionary with dimension names as keys and lists
+containing indices of the chosen variables as values.</li>
+<li><strong>outVar</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A dictionary with dimension names as keys and a bool as value.</li>
+<li><strong>variable</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><em>optional</em>) – Name of variable for which data is to be retrieved. Defaults to None.
+Ignored if masked_data is specified.</li>
+<li><strong>masked_data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a><em>, </em><em>optional</em>) – <dl class="docutils">
+<dt>Masked dataset to be used. Stored as a dictionary with variable</dt>
+<dd>names as keys. Defaults to None.</dd>
+</dl>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>sel_message</strong> (<em>str</em>) – A string containing the selected points/ranges of parameters.
+Initialised using call to getSelectedMessage.</li>
+<li><strong>output_message</strong> (<em>str or xarray.Dataset</em>) – Output depends on mode. It is either a string containing the
+retrieved data or the retrieved data. More info in Notes.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>Modes of operation</p>
+<div class="line-block">
+<div class="line">1. If masked_data is specified, that dataset is used for retrieval of the messages required. Output is in the form of a string.</div>
+<div class="line">2. If masked_data is not specified, and variable is specified. Dataset for that variable is fetched and returned, after bounds are applied.</div>
+<div class="line">3. If neither masked_data nor variable are specified, variables specified by outVar are queried.</div>
+</div>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">xarray.Dataset()</span></code>, <a class="reference internal" href="#file_functions.getSelectedMessage" title="file_functions.getSelectedMessage"><code class="xref py py-func docutils literal notranslate"><span class="pre">getSelectedMessage()</span></code></a>, <a class="reference internal" href="#file_functions.getOutputMessage" title="file_functions.getOutputMessage"><code class="xref py py-func docutils literal notranslate"><span class="pre">getOutputMessage()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.getLatLon">
+<code class="descclassname">file_functions.</code><code class="descname">getLatLon</code><span class="sig-paren">(</span><em>xds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#getLatLon"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.getLatLon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the variable names for latitude and longitude.</p>
+<p>The functions queries the dataset for the variable names
+corresponding to the latitude and longitude. It assumes that the
+respective variables begin with ‘lat’ and ‘lon’.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>xds</strong> (<em>xarray Dataset</em>) – The dataset in question.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><ul class="simple">
+<li><strong>lon_var</strong> (<em>str</em>) – The name of the variable corresponding to longitude.</li>
+<li><strong>lat_var</strong> (<em>str</em>) – The name of the variable corresponding to latitude.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">startswith()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.getOutputMessage">
+<code class="descclassname">file_functions.</code><code class="descname">getOutputMessage</code><span class="sig-paren">(</span><em>dataset</em>, <em>mess_ind</em>, <em>outVar</em>, <em>masked_data=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#getOutputMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.getOutputMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a string containing the output data.</p>
+<p>The function takes in the ranges and output variables required and
+generates a string with data in the form of nested arrays. The
+string also contains the mean and std deviation for each variable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataset</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>mess_ind</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A dictionary with the dimensions as keys and the index or slice
+of indices as values. This object is generated by
+getSelectedMessage.</li>
+<li><strong>outVar</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A dictionary with dimension names as keys and a bool as value.</li>
+<li><strong>masked_data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a><em>, </em><em>optional</em>) – Masked dataset to be used. Stored as a dictionary with variable
+names as keys. Defaults to None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>output_message</strong> – A string containing the output data with some statistics.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#file_functions.getData" title="file_functions.getData"><code class="xref py py-func docutils literal notranslate"><span class="pre">getData()</span></code></a>, <a class="reference internal" href="#file_functions.getSelectedMessage" title="file_functions.getSelectedMessage"><code class="xref py py-func docutils literal notranslate"><span class="pre">getSelectedMessage()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.getSelectedMessage">
+<code class="descclassname">file_functions.</code><code class="descname">getSelectedMessage</code><span class="sig-paren">(</span><em>dataset</em>, <em>msgs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#getSelectedMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.getSelectedMessage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a string containing the bounds selected by the user.</p>
+<p>The function takes in a dictionary of indices and converts it to a
+string format and a dictionary of slices, which can then be fed as
+array indices.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataset</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>msgs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – Contains a dictionary with dimension names as keys and lists
+containing indices of the chosen variables as values.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>sel_message</strong> (<em>str</em>) – A string containing the selected points/ranges of parameters.</li>
+<li><strong>mess_ind_o</strong> (<em>dict</em>) – A dictionary with the dimensions as keys and the index or slice
+of indices as values. This object is passed to
+getOutputMessage to finally retrieve the data.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#file_functions.getData" title="file_functions.getData"><code class="xref py py-func docutils literal notranslate"><span class="pre">getData()</span></code></a>, <a class="reference internal" href="#file_functions.getOutputMessage" title="file_functions.getOutputMessage"><code class="xref py py-func docutils literal notranslate"><span class="pre">getOutputMessage()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.getShapeData">
+<code class="descclassname">file_functions.</code><code class="descname">getShapeData</code><span class="sig-paren">(</span><em>xds</em>, <em>var_name</em>, <em>time_index</em>, <em>shpfile</em>, <em>plac_ind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#getShapeData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.getShapeData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns data and some auxiliary information after applying a ShapeFile filter.</p>
+<p>This function takes in a dataset and applies a Shapefile filter to
+the data. Some specific inputs can result in distinct behaviour and
+is discussed under Notes. This function calls applyShape.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>xds</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>var_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Variable name. None if all are selected.</li>
+<li><strong>time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index if the time for which data is to be retrieved. None
+if all are selected.</li>
+<li><strong>shpfile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the shapefile in use.</li>
+<li><strong>plac_ind</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index of the geometry being selected. None if all are selected.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>out</strong> (<em>dataset or dict or numpy.array</em>) – The output data. The type depends on the parameters passed to
+the function. More information in Notes</li>
+<li><strong>geometries</strong> (<em>array_like</em>) – A list containing the geometries generated by the shape file.</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>Behaviour of the Function</p>
+<p>The data passed in <cite>xds</cite>, must contain unique variables beginning
+with ‘lat’ and ‘lon’ corresponding to latitude and longitude for
+the function to work.</p>
+<p>If a <cite>shapefile</cite> has not been specified, no filters are applied and
+the unmasked data is returned. <cite>geometries</cite> is set to None.</p>
+<p>If a <cite>shapefile</cite> has been specified, and both <cite>time_index</cite> and
+<cite>var_name</cite> have been specified, the appropriate filters are applied
+and a numpy array containing the masked data is returned.</p>
+<p>If <cite>shapefile</cite> has been specified, but either one of <cite>time_index</cite>
+and     <cite>var_name</cite> were not, then shapefile masked data for all
+variables across all avaiable time periods is returned as a dict
+with variable names as keys and lists of data as values.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#file_functions.applyShape" title="file_functions.applyShape"><code class="xref py py-func docutils literal notranslate"><span class="pre">applyShape()</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.getStats">
+<code class="descclassname">file_functions.</code><code class="descname">getStats</code><span class="sig-paren">(</span><em>dataSet</em>, <em>year_start</em>, <em>chk_status</em>, <em>variables</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#getStats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.getStats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves statistics for data from specifc periods.</p>
+<p>This function takes in information about the times for which the
+data is requested and outputs the statistics for each variable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataSet</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>year_start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The base year. If None, it is operating in month mode.</li>
+<li><strong>chk_status</strong> (<em>array_like</em><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – In year mode, it expects a list of boolean values. In month
+mode, it expects a dictionary of dictionary of boolean values,
+with year being the key for the outer dictionary and month, for
+the inner dictionary.</li>
+<li><strong>variables</strong> (<em>array_like</em>) – The list of variable names (as strings) that are being queried.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>final</strong> – A dictionary where the keys are the variable names and the
+values are tuples with the required statistics.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)">dict</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.nanmean()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.nanstd()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.nanmax()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.nanmin()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.openNETCDF">
+<code class="descclassname">file_functions.</code><code class="descname">openNETCDF</code><span class="sig-paren">(</span><em>filenames</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#openNETCDF"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.openNETCDF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Opens the files given as arguments.</p>
+<dl class="docutils">
+<dt>Wrapper around an xarray function to open NetCDF files. Opens the</dt>
+<dd>files specified in <cite>filenames</cite>.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filenames</strong> (<em>array_like</em>) – List of strings of filenames (with path).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A Python dictionary with filenames (without path) as keys and
+opened xarray datasets as values.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)">dict</a></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">xarray.Dataset()</span></code></dt>
+<dd>Type of values in returned dictionary.</dd>
+<dt><code class="xref py py-func docutils literal notranslate"><span class="pre">xarray.open_dataset()</span></code></dt>
+<dd>Function used internally.</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="file_functions.plotData">
+<code class="descclassname">file_functions.</code><code class="descname">plotData</code><span class="sig-paren">(</span><em>dataSet</em>, <em>start_time_index</em>, <em>end_time_index</em>, <em>time_interval</em>, <em>variables</em>, <em>filt=None</em>, <em>lat_range=None</em>, <em>lon_range=None</em>, <em>filename=None</em>, <em>place=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/file_functions.html#plotData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#file_functions.plotData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves data required for plotting time series graphs.</p>
+<p>This function generates the data required to plot graphs for
+variables in a discrete user-specified time interval, taking
+average over each smaller user-specified period. The data used can
+be masked, or bounded by using the right keyword arguments. Uses
+a call to getShapeData for shapefile bounds.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataSet</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be retrieved.</li>
+<li><strong>start_time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index for the first time on the graph.</li>
+<li><strong>end_time_index</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index for the last time on the graph.</li>
+<li><strong>time_interval</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><em>tuple</em></a>) – This needs to be a tuple with an integer specifying a number
+and a string specifying the time period, namely ‘years’,
+‘months’, or ‘days’.</li>
+<li><strong>variables</strong> (<em>array_like</em>) – The list of variable names (as strings) that are being queried.</li>
+<li><strong>filt</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>,</em><em>optional</em>) – If None (default), no filters are used.
+If “bounds”, then lat-lon bounds are used.
+If “shapefile”, then a shapefile geometry is used.</li>
+<li><strong>lat_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#slice" title="(in Python v3.7)"><em>slice</em></a>) – A slice containing the index bounds for latitude. Required for
+“bounds” mode, ignored in others.</li>
+<li><strong>lon_range</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#slice" title="(in Python v3.7)"><em>slice</em></a>) – A slice containing the index bounds for longitude. Required for
+“bounds” mode, ignored in others.</li>
+<li><strong>filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the shapefile being used. Required for “shapefile”
+mode, ignored in others.</li>
+<li><strong>place</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The index of the place being selected. None, in case of all.
+Required for “shapefile” mode, ignored in others.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A tuple of two dictionaries, one with data, one with error and
+a list containing the time intervals. The dictionaries have
+variable names as keys and a list of data as values.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)">tuple</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.nanmean()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.nanstd()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">dateutil.relativedata()</span></code></p>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="module-plot_functions">
+<span id="the-plot-functions-module"></span><h2>The “plot_functions” module<a class="headerlink" href="#module-plot_functions" title="Permalink to this headline">¶</a></h2>
+<p>This contains the primary functions used for plotting.</p>
+<p>The functions defined here call on matplotlib and cartopy to generrate
+different types of plots. As of now, most functions simply implement
+the default options, more features still need to be added. Colorbars
+and general colour choices need to still be given to the user.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-mod docutils literal notranslate"><span class="pre">gui_functions</span></code>, <a class="reference internal" href="#module-file_functions" title="file_functions"><code class="xref py py-mod docutils literal notranslate"><span class="pre">file_functions</span></code></a>, <code class="xref py py-mod docutils literal notranslate"><span class="pre">driver</span></code></p>
+</div>
+<dl class="function">
+<dt id="plot_functions.animation">
+<code class="descclassname">plot_functions.</code><code class="descname">animation</code><span class="sig-paren">(</span><em>length</em>, <em>proj_string</em>, <em>show</em>, <em>save</em>, <em>savename</em>, <em>lon_var</em>, <em>lat_var</em>, <em>getDat</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plot_functions.html#animation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plot_functions.animation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an animated gif that can be viewed or saved.</p>
+<p>Plots the map depending on the specifications provided by the user.
+Combines individual images into a gif, if save is selected.
+Currently only works for variables with only three dimensions, and
+animates only along the time axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The number of frames that will be present in the animation.</li>
+<li><strong>proj_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the selected projection (must be from avaiable
+Cartopy options).</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether the animation needs to be displayed.</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether the animation should be saved as a gif.</li>
+<li><strong>savename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the saved gif.</li>
+<li><strong>lon_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the variable corresponding to longitude.</li>
+<li><strong>lat_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the variable corresponding to latitude.</li>
+<li><strong>getDat</strong> (<em>callable</em>) – An lambda instance of getShapeData, which takes time index
+offset as input.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.animation()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot_functions.getProjection">
+<code class="descclassname">plot_functions.</code><code class="descname">getProjection</code><span class="sig-paren">(</span><em>proj_string</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plot_functions.html#getProjection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plot_functions.getProjection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a cartopy projection object, given a string.</p>
+<p>Takes in a string as input, and returns an instance of cartopy
+projection, corresponding to the string. Some projections have
+additional options, which need to be incorporated in a later update.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>proj_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the selected projection (must be from avaiable
+Cartopy options).</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Cartopy projection instance.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">Cartopy.crs()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot_functions.plotLines">
+<code class="descclassname">plot_functions.</code><code class="descname">plotLines</code><span class="sig-paren">(</span><em>y</em>, <em>yerr</em>, <em>time_array</em>, <em>variables</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plot_functions.html#plotLines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plot_functions.plotLines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a line graph of certain specifications.</p>
+<p>Plots a line graph, with vertical error bars using given data. It
+is a loose wrapper around pyplot.errorbar.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>y</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A dictionary with variable names as keys and a numpy array
+containing y-values to be plotted as values.</li>
+<li><strong>yerr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A dictionary with variable names as keys and a numpy array
+containing the standard deviations to be plotted as values.</li>
+<li><strong>time_array</strong> (<em>array_like</em>) – A list of time values to be plotted on the x-axis.</li>
+<li><strong>vatiables</strong> (<em>array_like</em>) – A list containing the names of the variables that need to be
+plotted, in the form of strings.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.errorbar()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.xticks()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot_functions.plotMapShape">
+<code class="descclassname">plot_functions.</code><code class="descname">plotMapShape</code><span class="sig-paren">(</span><em>proj_string</em>, <em>xds</em>, <em>lon_var</em>, <em>lat_var</em>, <em>geometries</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plot_functions.html#plotMapShape"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plot_functions.plotMapShape" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the data on a cartopy map.</p>
+<p>Plots the map depending on the specifications provided by the user.
+The mean and standard deviation of the data is printed on the
+window as well. Currently, choice is limited to projection.Future
+updates should contain at least colour and window frame option.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>proj_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the selected projection (must be from avaiable
+Cartopy options).</li>
+<li><strong>xds</strong> (<em>xarray Dataset</em>) – The dataset from which data is to be plotted.</li>
+<li><strong>lon_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the variable corresponding to longitude.</li>
+<li><strong>lat_var</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the variable corresponding to latitude.</li>
+<li><strong>geometries</strong> (<em>array_like</em>) – An array of shapely geometries, which form the outline of the
+map. If None, default coastlines are created.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.show()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot_functions.vectorAnim">
+<code class="descclassname">plot_functions.</code><code class="descname">vectorAnim</code><span class="sig-paren">(</span><em>length</em>, <em>proj_string</em>, <em>show</em>, <em>save</em>, <em>savename</em>, <em>getU</em>, <em>getV</em>, <em>lon_arr</em>, <em>lat_arr</em>, <em>u_arr</em>, <em>v_arr</em>, <em>velocity</em>, <em>time_array</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plot_functions.html#vectorAnim"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plot_functions.vectorAnim" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an animated gif of a vector plot that can be viewed or saved.</p>
+<p>Plots a matplotlib quiver and combines individual images into a gif
+, if save is selected. It combines the functionality of
+matplotlib.pyplot.quiver and matplotlib.animation.FuncAnimation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>length</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The number of frames that will be present in the animation.</li>
+<li><strong>proj_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the selected projection (must be from avaiable
+Cartopy options).</li>
+<li><strong>show</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether the animation needs to be displayed.</li>
+<li><strong>save</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether the animation should be saved as a gif.</li>
+<li><strong>savename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the saved gif.</li>
+<li><strong>getU</strong> (<em>callable</em>) – An lambda instance of getShapeData, which takes time index
+offset as input, corresponding to the u-component.</li>
+<li><strong>getV</strong> (<em>callable</em>) – An lambda instance of getShapeData, which takes time index
+offset as input, corresponding to the v-component.</li>
+<li><strong>lon_arr</strong> (<em>array_like</em>) – A numpy array of longitudes.</li>
+<li><strong>lat_arr</strong> (<em>array_like</em>) – A numpy array of latitudes.</li>
+<li><strong>u_arr</strong> (<em>array_like</em>) – A 2-d numpy array of datapoints corresponding to u-component.</li>
+<li><strong>v_arr</strong> (<em>array_like</em>) – A 2-d numpy array of datapoints corresponding to v-component.</li>
+<li><strong>velocity</strong> (<em>array_like</em>) – A numpy array used for colour.</li>
+<li><strong>time_array</strong> (<em>array_like</em>) – A list containing the timestamps to be used on the animation.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>The shapes of the input arrays need to correspond to the
+specifications of pyplot’s quiver.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.animation()</span></code>, <code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.quiver()</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="plot_functions.vectorMap">
+<code class="descclassname">plot_functions.</code><code class="descname">vectorMap</code><span class="sig-paren">(</span><em>proj_string</em>, <em>lon_arr</em>, <em>lat_arr</em>, <em>u_arr</em>, <em>v_arr</em>, <em>velocity</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/plot_functions.html#vectorMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#plot_functions.vectorMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots a vector map of teh given data.</p>
+<p>Plots a matplotlib quiver plot, with regrid shape of 30. It is a
+thin wrapper around pyplot quiver functionality.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>proj_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the selected projection (must be from avaiable
+Cartopy options).</li>
+<li><strong>lon_arr</strong> (<em>array_like</em>) – A numpy array of longitudes.</li>
+<li><strong>lat_arr</strong> (<em>array_like</em>) – A numpy array of latitudes.</li>
+<li><strong>u_arr</strong> (<em>array_like</em>) – A 2-d numpy array of datapoints corresponding to u-component.</li>
+<li><strong>v_arr</strong> (<em>array_like</em>) – A 2-d numpy array of datapoints corresponding to v-component.</li>
+<li><strong>velocity</strong> (<em>array_like</em>) – A numpy array used for colour.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>The shapes of the input arrays need to correspond to the
+specifications of pyplot’s quiver.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><code class="xref py py-func docutils literal notranslate"><span class="pre">matplotlib.pyplot.quiver()</span></code></p>
+</div>
+</dd></dl>
+
+<div class="toctree-wrapper compound">
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">CDAPack</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Aditya Vasudevan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

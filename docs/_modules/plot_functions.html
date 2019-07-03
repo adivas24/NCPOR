@@ -1,0 +1,477 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>plot_functions &#8212; CDAPack TBD documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for plot_functions</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This contains the primary functions used for plotting.</span>
+
+<span class="sd">The functions defined here call on matplotlib and cartopy to generrate</span>
+<span class="sd">different types of plots. As of now, most functions simply implement </span>
+<span class="sd">the default options, more features still need to be added. Colorbars</span>
+<span class="sd">and general colour choices need to still be given to the user.</span>
+
+
+<span class="sd">See Also</span>
+<span class="sd">--------</span>
+<span class="sd">gui_functions</span>
+<span class="sd">file_functions</span>
+<span class="sd">driver</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">cartopy</span> 
+<span class="kn">import</span> <span class="nn">cartopy.crs</span> <span class="k">as</span> <span class="nn">ccrs</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.dates</span> <span class="k">as</span> <span class="nn">mdates</span>
+<span class="kn">from</span> <span class="nn">matplotlib.animation</span> <span class="k">import</span> <span class="n">FuncAnimation</span>
+<span class="kn">import</span> <span class="nn">matplotlib</span> <span class="k">as</span> <span class="nn">mpl</span>
+<span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="k">as</span> <span class="nn">cm</span>
+
+<span class="c1"># TODO	Plot only in a rectangular/polar range?</span>
+<span class="c1">#		Figure out how to modify the size of maps and maybe make it dynamic?</span>
+
+<div class="viewcode-block" id="plotMapShape"><a class="viewcode-back" href="../index.html#plot_functions.plotMapShape">[docs]</a><span class="k">def</span> <span class="nf">plotMapShape</span><span class="p">(</span><span class="n">proj_string</span><span class="p">,</span> <span class="n">xds</span><span class="p">,</span> <span class="n">lon_var</span><span class="p">,</span> <span class="n">lat_var</span><span class="p">,</span> <span class="n">geometries</span><span class="p">):</span>
+	<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Plots the data on a cartopy map.</span>
+
+<span class="sd">	Plots the map depending on the specifications provided by the user.</span>
+<span class="sd">	The mean and standard deviation of the data is printed on the </span>
+<span class="sd">	window as well.	Currently, choice is limited to projection.Future </span>
+<span class="sd">	updates should contain at least colour and window frame option.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	proj_string: str</span>
+<span class="sd">		The name of the selected projection (must be from avaiable </span>
+<span class="sd">		Cartopy options).</span>
+<span class="sd">	xds: xarray Dataset</span>
+<span class="sd">		The dataset from which data is to be plotted.</span>
+<span class="sd">	lon_var: str</span>
+<span class="sd">		The name of the variable corresponding to longitude.</span>
+<span class="sd">	lat_var: str</span>
+<span class="sd">		The name of the variable corresponding to latitude.</span>
+<span class="sd">	geometries: array_like</span>
+<span class="sd">		An array of shapely geometries, which form the outline of the </span>
+<span class="sd">		map. If None, default coastlines are created.</span>
+
+<span class="sd">	See Also</span>
+<span class="sd">	--------</span>
+<span class="sd">	matplotlib.pyplot.show</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+	<span class="n">pc</span> <span class="o">=</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">()</span>
+	<span class="n">proj</span> <span class="o">=</span> <span class="n">getProjection</span><span class="p">(</span><span class="n">proj_string</span><span class="p">)</span>
+	<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+	<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="n">proj</span><span class="p">)</span>
+	<span class="n">xds</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">pc</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">lon_var</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">lat_var</span><span class="p">,</span> <span class="n">cbar_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">))</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">geometries</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">add_geometries</span><span class="p">(</span><span class="n">geometries</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span> <span class="c1"># geometries is None means that no SHAPEFILE was used.</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">coastlines</span><span class="p">()</span>
+	<span class="n">ax</span><span class="o">.</span><span class="n">set_global</span><span class="p">()</span>
+	<span class="n">fig</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;Mean: &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds</span><span class="p">)))</span><span class="o">+</span> <span class="s2">&quot; Standard Deviation: &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds</span><span class="p">))))</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="getProjection"><a class="viewcode-back" href="../index.html#plot_functions.getProjection">[docs]</a><span class="k">def</span> <span class="nf">getProjection</span><span class="p">(</span><span class="n">proj_string</span><span class="p">):</span>
+	<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Returns a cartopy projection object, given a string.</span>
+
+<span class="sd">	Takes in a string as input, and returns an instance of cartopy </span>
+<span class="sd">	projection, corresponding to the string. Some projections have</span>
+<span class="sd">	additional options, which need to be incorporated in a later update.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	proj_string: str</span>
+<span class="sd">		The name of the selected projection (must be from avaiable </span>
+<span class="sd">		Cartopy options).</span>
+<span class="sd">	</span>
+<span class="sd">	Returns</span>
+<span class="sd">	-------</span>
+<span class="sd">	Cartopy projection instance.</span>
+
+<span class="sd">	See Also</span>
+<span class="sd">	--------</span>
+<span class="sd">	Cartopy.crs</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+	<span class="n">proj_dict</span> <span class="o">=</span> <span class="p">{</span>
+	<span class="c1"># ALLOW SELECTION OF PARAMETERS TO THE PROJECTION. RIGHT NOW EVERYTHING IS SET TO DEFAULTS (ESPECIALLY UTM)</span>
+	<span class="s2">&quot;PlateCarree&quot;</span><span class="p">:</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">(),</span>
+	<span class="s2">&quot;AlbersEqualArea&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">AlbersEqualArea</span><span class="p">(),</span>
+	<span class="s2">&quot;AzimuthalEquidistant&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">AzimuthalEquidistant</span><span class="p">(),</span>
+	<span class="s2">&quot;EquidistantConic&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EquidistantConic</span><span class="p">(),</span>
+	<span class="s2">&quot;LambertConformal&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">LambertConformal</span><span class="p">(),</span>
+	<span class="s2">&quot;LambertCylindrical&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">LambertCylindrical</span><span class="p">(),</span>
+	<span class="s2">&quot;Mercator&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Mercator</span><span class="p">(),</span>
+	<span class="s2">&quot;Miller&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Miller</span><span class="p">(),</span>
+	<span class="s2">&quot;Mollweide&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Mollweide</span><span class="p">(),</span>
+	<span class="s2">&quot;Orthographic&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Orthographic</span><span class="p">(),</span>
+	<span class="s2">&quot;Robinson&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Robinson</span><span class="p">(),</span>
+	<span class="s2">&quot;Sinusoidal&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Sinusoidal</span><span class="p">(),</span>
+	<span class="s2">&quot;Stereographic&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Stereographic</span><span class="p">(),</span>
+	<span class="s2">&quot;TransverseMercator&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">TransverseMercator</span><span class="p">(),</span>
+	<span class="s2">&quot;UTM&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">UTM</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span>
+	<span class="s2">&quot;InterruptedGoodeHomolosine&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">InterruptedGoodeHomolosine</span><span class="p">(),</span>
+	<span class="s2">&quot;RotatedPole&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">RotatedPole</span><span class="p">(),</span>
+	<span class="s2">&quot;OSGB&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">OSGB</span><span class="p">(),</span>
+	<span class="s2">&quot;EuroPP&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EuroPP</span><span class="p">(),</span>
+	<span class="s2">&quot;Geostationary&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Geostationary</span><span class="p">(),</span>
+	<span class="s2">&quot;NearsidePerspective&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">NearsidePerspective</span><span class="p">(),</span>
+	<span class="s2">&quot;EckertI&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EckertI</span><span class="p">(),</span>
+	<span class="s2">&quot;EckertII&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EckertII</span><span class="p">(),</span>
+	<span class="s2">&quot;EckertIII&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EckertIII</span><span class="p">(),</span>
+	<span class="s2">&quot;EckertIV&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EckertIV</span><span class="p">(),</span>
+	<span class="s2">&quot;EckertV&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EckertV</span><span class="p">(),</span>
+	<span class="s2">&quot;EckertVI&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EckertVI</span><span class="p">(),</span>
+	<span class="s2">&quot;EqualEarth&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">EqualEarth</span><span class="p">(),</span>
+	<span class="s2">&quot;Gnomonic&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">Gnomonic</span><span class="p">(),</span>
+	<span class="s2">&quot;LambertAzimuthalEqualArea&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">LambertAzimuthalEqualArea</span><span class="p">(),</span>
+	<span class="s2">&quot;NorthPolarStereo&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">NorthPolarStereo</span><span class="p">(),</span>
+	<span class="s2">&quot;OSNI&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">OSNI</span><span class="p">(),</span>
+	<span class="s2">&quot;SouthPolarStereo&quot;</span><span class="p">:</span><span class="n">ccrs</span><span class="o">.</span><span class="n">SouthPolarStereo</span><span class="p">()</span>
+	<span class="p">}</span>
+	<span class="k">return</span> <span class="n">proj_dict</span><span class="p">[</span><span class="n">proj_string</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="animation"><a class="viewcode-back" href="../index.html#plot_functions.animation">[docs]</a><span class="k">def</span> <span class="nf">animation</span><span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="n">proj_string</span><span class="p">,</span> <span class="n">show</span><span class="p">,</span> <span class="n">save</span><span class="p">,</span> <span class="n">savename</span><span class="p">,</span> <span class="n">lon_var</span><span class="p">,</span> <span class="n">lat_var</span><span class="p">,</span> <span class="n">getDat</span><span class="p">):</span>
+	<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Creates an animated gif that can be viewed or saved.</span>
+
+<span class="sd">	Plots the map depending on the specifications provided by the user.</span>
+<span class="sd">	Combines individual images into a gif, if save is selected.</span>
+<span class="sd">	Currently only works for variables with only three dimensions, and</span>
+<span class="sd">	animates only along the time axis.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	length:	int</span>
+<span class="sd">		The number of frames that will be present in the animation.</span>
+<span class="sd">	proj_string: str</span>
+<span class="sd">		The name of the selected projection (must be from avaiable </span>
+<span class="sd">		Cartopy options).</span>
+<span class="sd">	show: bool</span>
+<span class="sd">		Whether the animation needs to be displayed.</span>
+<span class="sd">	save: bool</span>
+<span class="sd">		Whether the animation should be saved as a gif.</span>
+<span class="sd">	savename: str</span>
+<span class="sd">		The name of the saved gif.</span>
+<span class="sd">	lon_var: str</span>
+<span class="sd">		The name of the variable corresponding to longitude.</span>
+<span class="sd">	lat_var: str</span>
+<span class="sd">		The name of the variable corresponding to latitude.</span>
+<span class="sd">	getDat: callable</span>
+<span class="sd">		An lambda instance of getShapeData, which takes time index </span>
+<span class="sd">		offset as input. </span>
+
+<span class="sd">	See Also</span>
+<span class="sd">	--------</span>
+<span class="sd">	matplotlib.animation</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">pc</span> <span class="o">=</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">()</span>
+	<span class="n">proj</span> <span class="o">=</span> <span class="n">getProjection</span><span class="p">(</span><span class="n">proj_string</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">style</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s1">&#39;seaborn-pastel&#39;</span><span class="p">)</span>
+	<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+	<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span><span class="o">=</span><span class="n">proj</span><span class="p">)</span>
+	<span class="n">xds</span><span class="p">,</span> <span class="n">geometries</span> <span class="o">=</span> <span class="n">getDat</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+	<span class="n">mesh</span> <span class="o">=</span> <span class="n">xds</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">pc</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">lon_var</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">lat_var</span><span class="p">,</span> <span class="n">cbar_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;horizontal&#39;</span><span class="p">))</span>
+	<span class="n">cl</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="k">if</span> <span class="p">(</span><span class="n">geometries</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">add_geometries</span><span class="p">(</span><span class="n">geometries</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="n">cl</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">coastlines</span><span class="p">()</span>
+	<span class="n">ax</span><span class="o">.</span><span class="n">set_global</span><span class="p">()</span>
+	<span class="n">textvar1</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="o">-</span><span class="mi">175</span><span class="p">,</span> <span class="o">-</span><span class="mi">60</span><span class="p">,</span><span class="n">ax</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Mean: &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds</span><span class="p">)))</span><span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Std Dev: &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds</span><span class="p">))),</span> <span class="n">size</span> <span class="o">=</span> <span class="s2">&quot;xx-small&quot;</span><span class="p">)</span>
+	<span class="c1"># Placement depends on projection, gets messed up for all but the PlateCarree projection.</span>
+	<span class="n">message</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="k">def</span> <span class="nf">init</span><span class="p">():</span>
+		<span class="k">nonlocal</span> <span class="n">cl</span>
+		<span class="k">if</span> <span class="p">(</span><span class="n">geometries</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+			<span class="n">cl</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">cl</span><span class="p">,</span><span class="n">ax</span><span class="o">.</span><span class="n">title</span>
+
+	<span class="k">def</span> <span class="nf">animate</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+		<span class="k">nonlocal</span>  <span class="n">mesh</span><span class="p">,</span><span class="n">cl</span><span class="p">,</span><span class="n">textvar1</span>
+		<span class="n">xds</span><span class="p">,</span> <span class="n">lon_var</span><span class="p">,</span> <span class="n">lat_var</span><span class="p">,</span> <span class="n">geometries</span> <span class="o">=</span> <span class="n">getDat</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+		<span class="n">mesh</span> <span class="o">=</span> <span class="n">xds</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">pc</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">lon_var</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">lat_var</span><span class="p">,</span> <span class="n">add_colorbar</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">+</span><span class="s1">&#39;[&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">length</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;]&#39;</span><span class="p">)</span>
+		<span class="n">textvar1</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">title</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span><span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Mean: &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds</span><span class="p">)))</span><span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Standard Deviation: &quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanstd</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds</span><span class="p">))))</span>
+		<span class="n">cl</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">if</span><span class="p">(</span><span class="n">i</span> <span class="o">==</span> <span class="n">length</span> <span class="ow">and</span> <span class="n">show</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;To continue, close the window.&quot;</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">mesh</span><span class="p">,</span><span class="n">cl</span><span class="p">,</span><span class="n">textvar1</span>
+
+
+	<span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">length</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init_func</span> <span class="o">=</span> <span class="n">init</span><span class="p">)</span>
+	
+	<span class="k">if</span><span class="p">(</span><span class="n">show</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+		<span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Displaying &quot;</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">save</span><span class="p">):</span>
+		<span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Saving &quot;</span>
+		<span class="n">anim</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">savename</span><span class="o">+</span><span class="s1">&#39;.gif&#39;</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="s1">&#39;imagemagick&#39;</span><span class="p">)</span></div>
+	
+
+<div class="viewcode-block" id="vectorMap"><a class="viewcode-back" href="../index.html#plot_functions.vectorMap">[docs]</a><span class="k">def</span> <span class="nf">vectorMap</span><span class="p">(</span><span class="n">proj_string</span><span class="p">,</span> <span class="n">lon_arr</span><span class="p">,</span> <span class="n">lat_arr</span><span class="p">,</span> <span class="n">u_arr</span><span class="p">,</span> <span class="n">v_arr</span><span class="p">,</span> <span class="n">velocity</span><span class="p">):</span>
+	<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Plots a vector map of teh given data.</span>
+
+<span class="sd">	Plots a matplotlib quiver plot, with regrid shape of 30. It is a </span>
+<span class="sd">	thin wrapper around pyplot quiver functionality.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	proj_string: str</span>
+<span class="sd">		The name of the selected projection (must be from avaiable </span>
+<span class="sd">		Cartopy options).</span>
+<span class="sd">	lon_arr: array_like</span>
+<span class="sd">		A numpy array of longitudes.</span>
+<span class="sd">	lat_arr: array_like</span>
+<span class="sd">		A numpy array of latitudes.</span>
+<span class="sd">	u_arr: array_like</span>
+<span class="sd">		A 2-d numpy array of datapoints corresponding to u-component.</span>
+<span class="sd">	v_arr: array_like</span>
+<span class="sd">		A 2-d numpy array of datapoints corresponding to v-component.</span>
+<span class="sd">	velocity: array_like</span>
+<span class="sd">		A numpy array used for colour.</span>
+
+<span class="sd">	Notes</span>
+<span class="sd">	-----</span>
+<span class="sd">	The shapes of the input arrays need to correspond to the </span>
+<span class="sd">	specifications of pyplot&#39;s quiver. </span>
+
+<span class="sd">	See Also</span>
+<span class="sd">	--------</span>
+<span class="sd">	matplotlib.pyplot.quiver</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">pc</span> <span class="o">=</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">()</span>
+	<span class="n">proj</span> <span class="o">=</span> <span class="n">getProjection</span><span class="p">(</span><span class="n">proj_string</span><span class="p">)</span> 
+	<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+	<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span> <span class="o">=</span> <span class="n">proj</span><span class="p">)</span>
+	<span class="n">ax</span><span class="o">.</span><span class="n">coastlines</span><span class="p">()</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">lon_arr</span><span class="p">,</span><span class="n">lat_arr</span><span class="p">,</span><span class="n">u_arr</span><span class="p">,</span> <span class="n">v_arr</span><span class="p">,</span> <span class="n">velocity</span><span class="p">,</span> <span class="n">transform</span> <span class="o">=</span> <span class="n">pc</span><span class="p">,</span> <span class="n">regrid_shape</span> <span class="o">=</span> <span class="mi">30</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">orientation</span> <span class="o">=</span> <span class="s1">&#39;horizontal&#39;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="vectorAnim"><a class="viewcode-back" href="../index.html#plot_functions.vectorAnim">[docs]</a><span class="k">def</span> <span class="nf">vectorAnim</span><span class="p">(</span><span class="n">length</span><span class="p">,</span> <span class="n">proj_string</span><span class="p">,</span> <span class="n">show</span><span class="p">,</span> <span class="n">save</span><span class="p">,</span> <span class="n">savename</span><span class="p">,</span> <span class="n">getU</span><span class="p">,</span> <span class="n">getV</span><span class="p">,</span> <span class="n">lon_arr</span><span class="p">,</span><span class="n">lat_arr</span><span class="p">,</span><span class="n">u_arr</span><span class="p">,</span> <span class="n">v_arr</span><span class="p">,</span> <span class="n">velocity</span><span class="p">,</span> <span class="n">time_array</span><span class="p">):</span>
+	<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Creates an animated gif of a vector plot that can be viewed or saved.</span>
+
+<span class="sd">	Plots a matplotlib quiver and combines individual images into a gif</span>
+<span class="sd">	, if save is selected. It combines the functionality of </span>
+<span class="sd">	matplotlib.pyplot.quiver and matplotlib.animation.FuncAnimation.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	length:	int</span>
+<span class="sd">		The number of frames that will be present in the animation.</span>
+<span class="sd">	proj_string: str</span>
+<span class="sd">		The name of the selected projection (must be from avaiable </span>
+<span class="sd">		Cartopy options).</span>
+<span class="sd">	show: bool</span>
+<span class="sd">		Whether the animation needs to be displayed.</span>
+<span class="sd">	save: bool</span>
+<span class="sd">		Whether the animation should be saved as a gif.</span>
+<span class="sd">	savename: str</span>
+<span class="sd">		The name of the saved gif.</span>
+<span class="sd">	getU: callable</span>
+<span class="sd">		An lambda instance of getShapeData, which takes time index </span>
+<span class="sd">		offset as input, corresponding to the u-component.</span>
+<span class="sd">	getV: callable</span>
+<span class="sd">		An lambda instance of getShapeData, which takes time index </span>
+<span class="sd">		offset as input, corresponding to the v-component.</span>
+<span class="sd">	lon_arr: array_like</span>
+<span class="sd">		A numpy array of longitudes.</span>
+<span class="sd">	lat_arr: array_like</span>
+<span class="sd">		A numpy array of latitudes.</span>
+<span class="sd">	u_arr: array_like</span>
+<span class="sd">		A 2-d numpy array of datapoints corresponding to u-component.</span>
+<span class="sd">	v_arr: array_like</span>
+<span class="sd">		A 2-d numpy array of datapoints corresponding to v-component.</span>
+<span class="sd">	velocity: array_like</span>
+<span class="sd">		A numpy array used for colour.</span>
+<span class="sd">	time_array: array_like</span>
+<span class="sd">		A list containing the timestamps to be used on the animation.</span>
+
+<span class="sd">	Notes</span>
+<span class="sd">	-----</span>
+<span class="sd">	The shapes of the input arrays need to correspond to the </span>
+<span class="sd">	specifications of pyplot&#39;s quiver. </span>
+
+<span class="sd">	See Also</span>
+<span class="sd">	--------</span>
+<span class="sd">	matplotlib.animation</span>
+<span class="sd">	matplotlib.pyplot.quiver</span>
+
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">pc</span> <span class="o">=</span> <span class="n">ccrs</span><span class="o">.</span><span class="n">PlateCarree</span><span class="p">()</span>
+	<span class="n">proj</span> <span class="o">=</span> <span class="n">getProjection</span><span class="p">(</span><span class="n">proj_string</span><span class="p">)</span> 
+	<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+	<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span> <span class="o">=</span> <span class="n">proj</span><span class="p">)</span>
+	<span class="n">ax</span><span class="o">.</span><span class="n">coastlines</span><span class="p">()</span>
+	<span class="n">ax</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">lon_arr</span><span class="p">,</span><span class="n">lat_arr</span><span class="p">,</span><span class="n">u_arr</span><span class="p">,</span> <span class="n">v_arr</span><span class="p">,</span> <span class="n">velocity</span><span class="p">,</span> <span class="n">transform</span> <span class="o">=</span> <span class="n">pc</span><span class="p">,</span> <span class="n">regrid_shape</span> <span class="o">=</span> <span class="mi">30</span><span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">init</span><span class="p">():</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">coastlines</span><span class="p">()</span>
+		<span class="k">return</span> <span class="n">ax</span><span class="o">.</span><span class="n">title</span>
+	
+	<span class="k">def</span> <span class="nf">animate</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+		<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="n">projection</span> <span class="o">=</span> <span class="n">proj</span><span class="p">)</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">coastlines</span><span class="p">()</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">time_array</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+		<span class="n">xds1</span><span class="p">,</span> <span class="n">geometries</span> <span class="o">=</span> <span class="n">getU</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+		<span class="n">xds2</span><span class="p">,</span> <span class="n">geometries</span> <span class="o">=</span> <span class="n">getV</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+		<span class="n">u_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds1</span><span class="p">)</span>
+		<span class="n">v_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xds2</span><span class="p">)</span>
+		<span class="n">velocity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">u_arr</span><span class="o">*</span><span class="n">u_arr</span><span class="o">+</span><span class="n">v_arr</span><span class="o">*</span><span class="n">v_arr</span><span class="p">)</span>
+		<span class="n">ax</span><span class="o">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">lon_arr</span><span class="p">,</span><span class="n">lat_arr</span><span class="p">,</span><span class="n">u_arr</span><span class="p">,</span> <span class="n">v_arr</span><span class="p">,</span> <span class="n">velocity</span><span class="p">,</span> <span class="n">transform</span> <span class="o">=</span> <span class="n">pc</span><span class="p">,</span> <span class="n">regrid_shape</span> <span class="o">=</span> <span class="mi">30</span><span class="p">)</span>
+		<span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">+</span><span class="s1">&#39;[&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">length</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;]&#39;</span><span class="p">)</span>
+		<span class="k">if</span><span class="p">(</span><span class="n">i</span> <span class="o">==</span> <span class="n">length</span> <span class="ow">and</span> <span class="n">show</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+			<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;To continue, close current plot window.&quot;</span><span class="p">)</span> 
+		<span class="k">if</span><span class="p">(</span><span class="n">save</span><span class="p">):</span>
+			<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;.png&#39;</span><span class="p">,</span> <span class="n">dpi</span> <span class="o">=</span> <span class="s1">&#39;figure&#39;</span><span class="p">)</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+	
+	<span class="n">anim</span> <span class="o">=</span> <span class="n">FuncAnimation</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">animate</span><span class="p">,</span> <span class="n">frames</span><span class="o">=</span><span class="n">length</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">blit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">init_func</span> <span class="o">=</span> <span class="n">init</span><span class="p">)</span>
+	<span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Displaying &quot;</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">show</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+	
+
+	<span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Saving &quot;</span>
+	<span class="k">if</span><span class="p">(</span><span class="n">save</span><span class="p">):</span>
+		<span class="k">if</span><span class="p">(</span><span class="n">show</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">):</span>
+			<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+		 		<span class="n">animate</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+		<span class="kn">import</span> <span class="nn">subprocess</span>
+		<span class="kn">import</span> <span class="nn">os</span>
+		<span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s2">&quot;convert -delay 40 temp*.png &quot;</span><span class="o">+</span><span class="n">savename</span><span class="o">+</span><span class="s2">&quot;.gif&quot;</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">length</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+			<span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;temp&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;.png&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="plotLines"><a class="viewcode-back" href="../index.html#plot_functions.plotLines">[docs]</a><span class="k">def</span> <span class="nf">plotLines</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">yerr</span><span class="p">,</span> <span class="n">time_array</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+	<span class="sa">r</span><span class="sd">&quot;&quot;&quot;Creates a line graph of certain specifications.</span>
+
+<span class="sd">	Plots a line graph, with vertical error bars using given data. It </span>
+<span class="sd">	is a loose wrapper around pyplot.errorbar.</span>
+
+<span class="sd">	Parameters</span>
+<span class="sd">	----------</span>
+<span class="sd">	y:	dict</span>
+<span class="sd">		A dictionary with variable names as keys and a numpy array </span>
+<span class="sd">		containing y-values to be plotted as values.</span>
+<span class="sd">	yerr: dict</span>
+<span class="sd">		A dictionary with variable names as keys and a numpy array</span>
+<span class="sd">		containing the standard deviations to be plotted as values.</span>
+<span class="sd">	time_array: array_like</span>
+<span class="sd">		A list of time values to be plotted on the x-axis.</span>
+<span class="sd">	vatiables: array_like</span>
+<span class="sd">		A list containing the names of the variables that need to be </span>
+<span class="sd">		plotted, in the form of strings.  </span>
+<span class="sd">	</span>
+<span class="sd">	See Also</span>
+<span class="sd">	--------</span>
+<span class="sd">	matplotlib.pyplot.errorbar</span>
+<span class="sd">	matplotlib.pyplot.xticks</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="n">x</span> <span class="o">=</span> <span class="n">mdates</span><span class="o">.</span><span class="n">date2num</span><span class="p">(</span><span class="n">time_array</span><span class="p">)</span>
+	<span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+		<span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">[</span><span class="n">b</span><span class="p">],</span> <span class="n">yerr</span><span class="o">=</span><span class="n">yerr</span><span class="p">[</span><span class="n">b</span><span class="p">])</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">time_array</span><span class="p">,</span> <span class="n">rotation</span> <span class="o">=</span> <span class="mi">65</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="s2">&quot;xx-small&quot;</span><span class="p">)</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+	<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">CDAPack</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, Aditya Vasudevan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

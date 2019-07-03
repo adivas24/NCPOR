@@ -4,14 +4,9 @@ import gl_vars
 import file_functions as ffunc
 import plot_functions as pfunc
 
-from typing import *
-
-
 import tkinter as tk
 from tkinter import ttk
-from tkinter import tix
-from tkinter.filedialog import askopenfilename
-from tkinter.filedialog import asksaveasfilename
+from tkinter.filedialog import askopenfilename, asksaveasfilename
 
 # Used for creating the GUI.
 
@@ -26,9 +21,9 @@ from datetime import datetime
 
 # TODO	Go through and clean up code.
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
+# Create a ffunc. function to read shapefile and get locations.
 
-
-def getMultiSets(filenames: List[str]):
+def getMultiSets(filenames):
 	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
 	chk_vars = dict()
@@ -53,6 +48,7 @@ def getMultiSets(filenames: List[str]):
 	b3 = tk.Button(gl_vars.root, text = 'Done')
 
 	def combine_files():
+		nonlocal filenames2
 		indxs = [a for a in filenames if chk_vars[a].get() == 1]
 		gl_vars.data,filenames2 = ffunc.combineFiles(gl_vars.data, filenames, indxs, var.get())
 
@@ -108,7 +104,7 @@ def getMultiSets(filenames: List[str]):
 	gl_vars.root.grid_columnconfigure(0, minsize=150)
 	gl_vars.root.grid_columnconfigure(4, minsize=150)
 
-def addPages(filenames: List[str]):
+def addPages(filenames):
 	gl_vars.pages = dict()
 	for i in filenames:
 		gl_vars.pages[i] = ttk.Frame(gl_vars.nb)
@@ -173,7 +169,7 @@ def fillPages():
 	gl_vars.root.grid_rowconfigure(92, minsize=20)
 	gl_vars.root.grid_rowconfigure(93, minsize=20)
 
-def createSelRow(name: str, num: int, ind: str):
+def createSelRow(name, num, ind):
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
 	gl_vars.chk_var_list1[ind][name] = tk.IntVar(gl_vars.pages[ind], name = "var$"+ind+ "$" + name + '$' + str(num+5))
 	r1 = tk.Radiobutton(gl_vars.pages[ind], text = 'Single', variable = gl_vars.chk_var_list1[ind][name], value = 0)
@@ -181,7 +177,7 @@ def createSelRow(name: str, num: int, ind: str):
 	r2 = tk.Radiobutton(gl_vars.pages[ind], text = 'Range (Inclusive)', variable = gl_vars.chk_var_list1[ind][name], value = 1)
 	r2.grid(row = num, column = 2)
 
-def createSelBox(name: str, num: int, ind: str, value_list: List[str]):
+def createSelBox(name, num, ind, value_list):
 	value_list.sort()
 	tk.Label(gl_vars.pages[ind], text = name).grid(row = num+5, column = 0)
 	gl_vars.spn_box_list[ind][name] = [tk.Spinbox(gl_vars.pages[ind]), tk.Spinbox(gl_vars.pages[ind])]
@@ -189,7 +185,7 @@ def createSelBox(name: str, num: int, ind: str, value_list: List[str]):
 	gl_vars.spn_box_list[ind][name][0].grid(row = num+5, column = 1)
 	gl_vars.spn_box_list[ind][name][1].configure(values=value_list)
 
-def createCheckBox(data_var: str, ind: str, num: int, num2: int):
+def createCheckBox(data_var, ind, num, num2):
 	gl_vars.chk_var_list2[ind][data_var] = tk.BooleanVar(gl_vars.pages[ind], name = "var$"+data_var+"$"+ind+"$"+str(num2-1))
 	tk.Checkbutton(gl_vars.pages[ind], text = data_var, variable = gl_vars.chk_var_list2[ind][data_var]).grid(row = num, column = num2)
 
@@ -212,15 +208,16 @@ def getIndexes():
 	return messages,outVar
 
 
-def printMessages(o_message: str, s_message: str):
+def printMessages(o_message, s_message):
 	gl_vars.selBox.delete(1.0,tk.END)
 	gl_vars.selBox.insert(tk.INSERT, s_message)
 	gl_vars.opBox.delete(1.0,tk.END)
 	gl_vars.opBox.insert(tk.INSERT, o_message)
 
-def openWindow(org: int):
+def openWindow(org):
 	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
 	dataset = gl_vars.data[i]
+	lon_var, lat_var = ffunc.getLatLon(dataset)
 	window = tk.Toplevel(gl_vars.root)
 	var2 = tk.IntVar(window) # shape file toggle
 	var_list = list(gl_vars.data[i].data_vars.keys())
@@ -386,14 +383,13 @@ def openWindow(org: int):
 				plac_ind = None
 			org = varRadio.get()
 			if (org == 0):
-
-				xds, lon_var, lat_var, geometries = ffunc.getShapeData(dataset, var_name, t1, filename, plac_ind)
+				xds, geometries = ffunc.getShapeData(dataset, var_name, t1, filename, plac_ind)
 				pfunc.plotMapShape(proj_string, xds, lon_var, lat_var, geometries)
 			elif (org == 1):
-				pfunc.animation(t2-t1, proj_string,show, save, save_name, ffunc.animate_aux(dataset,var_name, t1, filename, plac_ind))
+				pfunc.animation(t2-t1, proj_string,show, save, save_name,lon_var,lat_var, ffunc.animate_aux(dataset,var_name, t1, filename, plac_ind))
 			elif (org == 2):
-				xds1, lon_var, lat_var, geometries = ffunc.getShapeData(dataset, 'u10', t1, filename, plac_ind)
-				xds2, lon_var, lat_var, geometries = ffunc.getShapeData(dataset, 'v10', t1, filename, plac_ind)
+				xds1, geometries = ffunc.getShapeData(dataset, 'u10', t1, filename, plac_ind)
+				xds2, geometries = ffunc.getShapeData(dataset, 'v10', t1, filename, plac_ind)
 				lon_arr = np.sort(((np.array(gl_vars.data[i].coords[lon_var]) + 180) % 360) -180)
 				lat_arr = np.array(gl_vars.data[i].coords[lat_var])
 				u_arr = np.array(xds1)
@@ -402,10 +398,10 @@ def openWindow(org: int):
 				pfunc.vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity)
 			elif (org == 3):
 				getU,getV = ffunc.animate_aux(dataset,'u10',t1,filename,plac_ind), ffunc.animate_aux(dataset,'v10',t1,filename,plac_ind)
-				xds1, lon_var, lat_var, geometries = getU(0)
-				xds2, lon_var, lat_var, geometries = getV(0)
-				lon_arr = np.sort(((np.array(gl_vars.data[i].coords[lon_var]) + 180) % 360) -180)
-				lat_arr = np.array(gl_vars.data[i].coords[lat_var])
+				xds1, geometries = getU(0)
+				xds2, geometries = getV(0)
+				lon_arr = np.sort(((np.array(dataset.coords[lon_var]) + 180) % 360) -180)
+				lat_arr = np.array(dataset.coords[lat_var])
 				u_arr = np.array(xds1)
 				v_arr = np.array(xds2)
 				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
@@ -440,10 +436,9 @@ def openWindow(org: int):
 			t3 = slice(time_t[0], time_t[1]+1)
 			if(varBnd.get() == 0):
 				msgs,outVar = getIndexes()
-				dataset = gl_vars.data[i]
 				data_arr = ffunc.getData(dataset,msgs,outVar,variable = var_name)[1]
 				if (filename is not None):
-					temp, lon_var, lat_var, temp2 = ffunc.getShapeData(dataset,var_name, t1, filename, plac_ind)
+					lon_var,lat_var = ffunc.getLatLon(dataset)
 					lat_rn, lon_rn = dataset.coords[lat_var],dataset.coords[lon_var]
 					out = ffunc.applyShape(data_arr, lat_var, lon_var, filename, plac_ind, lat_r = lat_rn, lon_r = lon_rn)[0]
 				else:
@@ -539,20 +534,20 @@ def dataSelector():
 	tk.Radiobutton(frame, variable = var_time, value = 1, text = "Month").grid(row = 0, column = 2)
 	time_range = [pd.to_datetime(a).date() for a in list(dataset.variables['time'].values)]
 	time_range.sort()
-	tk.Label(frame, text = "Select variables:" ).grid(row = 20,column = 0)
+	tk.Label(frame, text = "Select variables:" ).grid(row = 820,column = 0)
 	var_var = dict()
 	num = 0
 	for x in list(dataset.data_vars.keys()):
 		var_var[x] = tk.BooleanVar(frame)
-		tk.Checkbutton(frame, text = x, variable = var_var[x]).grid(row = 21, column = num)
+		tk.Checkbutton(frame, text = x, variable = var_var[x]).grid(row = 821, column = num)
 		num += 1
 	chk = []
 	var_rad = None
 	var_arr = None
 	year_start, year_end = None, None
-	tk.Label(frame, text = "Statistics").grid(row = 90, column = 0)
+	tk.Label(frame, text = "Statistics").grid(row = 900, column = 0)
 	outField = tk.Text(frame, height = 4, width = 5)
-	outField.grid(row = 90, column = 1, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	outField.grid(row = 900, column = 1, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
 	months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 	var_month = [tk.BooleanVar(frame, name = "all"+"_"+ mon) for mon in months]
 	month_label = [tk.Checkbutton(frame, text = months[d], variable = var_month[d]) for d in range(len(months))]
@@ -611,7 +606,7 @@ def dataSelector():
 	var_time.set(0)
 
 	b1 = tk.Button(frame, command = getStats, text = "Get statistics")
-	b1.grid(row = 100, column = 0)
+	b1.grid(row = 1000, column = 0)
 	canvas.config(scrollregion = (0,0,1000,1000))
 
 	def select(event, b, c):

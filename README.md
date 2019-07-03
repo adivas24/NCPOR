@@ -1,5 +1,5 @@
 # NCPOR
-Summer Project at NCPOR under Dr. Rohit Srivastav
+Summer Project at NCPOR under Dr. Rohit Srivastava
 
 # Title
 Development of a climate data analysis package in Python
@@ -55,7 +55,6 @@ The following Python packages (with currently used versions) are required:
 2. numpy (1.16.2)
 3. pandas (0.24.2)
 4. geopandas (0.5.0)
-5. Fiona (1.8.6)
 6. shapely (1.6.4.post1)
 7. rasterio (1.0.23)
 8. affine (2.2.2)

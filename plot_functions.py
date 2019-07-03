@@ -1,12 +1,22 @@
-# plot_functions.py #
+"""This contains the primary functions used for plotting.
 
-from typing import *
+The functions defined here call on matplotlib and cartopy to generrate
+different types of plots. As of now, most functions simply implement 
+the default options, more features still need to be added. Colorbars
+and general colour choices need to still be given to the user.
+
+
+See Also
+--------
+gui_functions
+file_functions
+driver
+
+"""
 
 import xarray as xr
 import numpy as np
-import pandas as pd
-import geopandas as gpd
-# Used for data manipulation and numerical calculations. 
+
 import cartopy 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
@@ -14,20 +24,38 @@ import matplotlib.dates as mdates
 from matplotlib.animation import FuncAnimation
 import matplotlib as mpl
 import matplotlib.cm as cm
-# Used for plotting
-
-import fiona
-import shapely.geometry as sgeom
-from rasterio import features
-from affine import Affine
-# Used for reading and applying shapefile mask.
 
 # TODO	Plot only in a rectangular/polar range?
 #		Figure out how to modify the size of maps and maybe make it dynamic?
 
+def plotMapShape(proj_string, xds, lon_var, lat_var, geometries):
+	r"""Plots the data on a cartopy map.
 
-def plotMapShape(proj_string: str, xds, lon_var: str, lat_var: str, geometries):
+	Plots the map depending on the specifications provided by the user.
+	The mean and standard deviation of the data is printed on the 
+	window as well.	Currently, choice is limited to projection.Future 
+	updates should contain at least colour and window frame option.
 
+	Parameters
+	----------
+	proj_string: str
+		The name of the selected projection (must be from avaiable 
+		Cartopy options).
+	xds: xarray Dataset
+		The dataset from which data is to be plotted.
+	lon_var: str
+		The name of the variable corresponding to longitude.
+	lat_var: str
+		The name of the variable corresponding to latitude.
+	geometries: array_like
+		An array of shapely geometries, which form the outline of the 
+		map. If None, default coastlines are created.
+
+	See Also
+	--------
+	matplotlib.pyplot.show
+
+    """
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
 	fig = plt.figure()
@@ -41,7 +69,28 @@ def plotMapShape(proj_string: str, xds, lon_var: str, lat_var: str, geometries):
 	fig.text(0,0, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
 	plt.show()
 
-def getProjection(proj_string: str):
+def getProjection(proj_string):
+	r"""Returns a cartopy projection object, given a string.
+
+	Takes in a string as input, and returns an instance of cartopy 
+	projection, corresponding to the string. Some projections have
+	additional options, which need to be incorporated in a later update.
+
+	Parameters
+	----------
+	proj_string: str
+		The name of the selected projection (must be from avaiable 
+		Cartopy options).
+	
+	Returns
+	-------
+	Cartopy projection instance.
+
+	See Also
+	--------
+	Cartopy.crs
+
+    """
 	proj_dict = {
 	# ALLOW SELECTION OF PARAMETERS TO THE PROJECTION. RIGHT NOW EVERYTHING IS SET TO DEFAULTS (ESPECIALLY UTM)
 	"PlateCarree": ccrs.PlateCarree(),
@@ -80,13 +129,45 @@ def getProjection(proj_string: str):
 	}
 	return proj_dict[proj_string]
 
-def animation(length: int, proj_string: str, show: bool, save: bool, savename: str, getDat):
+def animation(length, proj_string, show, save, savename, lon_var, lat_var, getDat):
+	r"""Creates an animated gif that can be viewed or saved.
+
+	Plots the map depending on the specifications provided by the user.
+	Combines individual images into a gif, if save is selected.
+	Currently only works for variables with only three dimensions, and
+	animates only along the time axis.
+
+	Parameters
+	----------
+	length:	int
+		The number of frames that will be present in the animation.
+	proj_string: str
+		The name of the selected projection (must be from avaiable 
+		Cartopy options).
+	show: bool
+		Whether the animation needs to be displayed.
+	save: bool
+		Whether the animation should be saved as a gif.
+	savename: str
+		The name of the saved gif.
+	lon_var: str
+		The name of the variable corresponding to longitude.
+	lat_var: str
+		The name of the variable corresponding to latitude.
+	getDat: callable
+		An lambda instance of getShapeData, which takes time index 
+		offset as input. 
+
+	See Also
+	--------
+	matplotlib.animation
+	"""
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
 	plt.style.use('seaborn-pastel')
 	fig = plt.figure()
 	ax = plt.axes(projection=proj)
-	xds, lon_var, lat_var, geometries = getDat(0)
+	xds, geometries = getDat(0)
 	mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
 	cl = None
 	if (geometries is not None):
@@ -103,7 +184,7 @@ def animation(length: int, proj_string: str, show: bool, save: bool, savename: s
 			cl.set_visible(True)
 		return cl,ax.title
 
-	def animate(i: int):
+	def animate(i):
 		nonlocal  mesh,cl,textvar1
 		xds, lon_var, lat_var, geometries = getDat(i)
 		mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, add_colorbar = False)
@@ -125,10 +206,39 @@ def animation(length: int, proj_string: str, show: bool, save: bool, savename: s
 		anim.save(savename+'.gif', writer='imagemagick')
 	
 
-def vectorMap(proj_string: str, lon_arr, lat_arr, u_arr, v_arr, velocity):
+def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity):
+	r"""Plots a vector map of teh given data.
+
+	Plots a matplotlib quiver plot, with regrid shape of 30. It is a 
+	thin wrapper around pyplot quiver functionality.
+
+	Parameters
+	----------
+	proj_string: str
+		The name of the selected projection (must be from avaiable 
+		Cartopy options).
+	lon_arr: array_like
+		A numpy array of longitudes.
+	lat_arr: array_like
+		A numpy array of latitudes.
+	u_arr: array_like
+		A 2-d numpy array of datapoints corresponding to u-component.
+	v_arr: array_like
+		A 2-d numpy array of datapoints corresponding to v-component.
+	velocity: array_like
+		A numpy array used for colour.
+
+	Notes
+	-----
+	The shapes of the input arrays need to correspond to the 
+	specifications of pyplot's quiver. 
+
+	See Also
+	--------
+	matplotlib.pyplot.quiver
+	"""
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string) 
-	plt.clf()
 	fig = plt.figure()
 	ax = plt.axes(projection = proj)
 	ax.coastlines()
@@ -136,8 +246,57 @@ def vectorMap(proj_string: str, lon_arr, lat_arr, u_arr, v_arr, velocity):
 	plt.colorbar(orientation = 'horizontal')
 	plt.show()
 
-def vectorAnim(length: int, proj_string: str, show: bool, save: bool, savename: str, getU, getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_array: List[str]):
-	pc = ccrs.PlateCarree() #Later this needs to be user-input.
+def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_array):
+	r"""Creates an animated gif of a vector plot that can be viewed or saved.
+
+	Plots a matplotlib quiver and combines individual images into a gif
+	, if save is selected. It combines the functionality of 
+	matplotlib.pyplot.quiver and matplotlib.animation.FuncAnimation.
+
+	Parameters
+	----------
+	length:	int
+		The number of frames that will be present in the animation.
+	proj_string: str
+		The name of the selected projection (must be from avaiable 
+		Cartopy options).
+	show: bool
+		Whether the animation needs to be displayed.
+	save: bool
+		Whether the animation should be saved as a gif.
+	savename: str
+		The name of the saved gif.
+	getU: callable
+		An lambda instance of getShapeData, which takes time index 
+		offset as input, corresponding to the u-component.
+	getV: callable
+		An lambda instance of getShapeData, which takes time index 
+		offset as input, corresponding to the v-component.
+	lon_arr: array_like
+		A numpy array of longitudes.
+	lat_arr: array_like
+		A numpy array of latitudes.
+	u_arr: array_like
+		A 2-d numpy array of datapoints corresponding to u-component.
+	v_arr: array_like
+		A 2-d numpy array of datapoints corresponding to v-component.
+	velocity: array_like
+		A numpy array used for colour.
+	time_array: array_like
+		A list containing the timestamps to be used on the animation.
+
+	Notes
+	-----
+	The shapes of the input arrays need to correspond to the 
+	specifications of pyplot's quiver. 
+
+	See Also
+	--------
+	matplotlib.animation
+	matplotlib.pyplot.quiver
+
+	"""
+	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string) 
 	fig = plt.figure()
 	ax = plt.axes(projection = proj)
@@ -148,13 +307,13 @@ def vectorAnim(length: int, proj_string: str, show: bool, save: bool, savename: 
 		ax.coastlines()
 		return ax.title
 	
-	def animate(i: int):
+	def animate(i):
 		plt.clf()
 		ax = plt.axes(projection = proj)
 		ax.coastlines()
 		ax.set_title(time_array[i])
-		xds1, lon_var, lat_var, geometries = getU(i)
-		xds2, lon_var, lat_var, geometries = getV(i)
+		xds1, geometries = getU(i)
+		xds2, geometries = getV(i)
 		u_arr = np.array(xds1)
 		v_arr = np.array(xds2)
 		velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
@@ -183,10 +342,34 @@ def vectorAnim(length: int, proj_string: str, show: bool, save: bool, savename: 
 		for i in range(length+1):
 			os.remove("temp"+str(i).zfill(4)+'.png')
 
-def plotLines(output_mean, output_std, time_array, variables: List[str]):
+def plotLines(y, yerr, time_array, variables):
+	r"""Creates a line graph of certain specifications.
+
+	Plots a line graph, with vertical error bars using given data. It 
+	is a loose wrapper around pyplot.errorbar.
+
+	Parameters
+	----------
+	y:	dict
+		A dictionary with variable names as keys and a numpy array 
+		containing y-values to be plotted as values.
+	yerr: dict
+		A dictionary with variable names as keys and a numpy array
+		containing the standard deviations to be plotted as values.
+	time_array: array_like
+		A list of time values to be plotted on the x-axis.
+	vatiables: array_like
+		A list containing the names of the variables that need to be 
+		plotted, in the form of strings.  
+	
+	See Also
+	--------
+	matplotlib.pyplot.errorbar
+	matplotlib.pyplot.xticks
+	"""
 	x = mdates.date2num(time_array)
 	for b in variables:
-		plt.errorbar(x,output_mean[b], yerr=output_std[b])
+		plt.errorbar(x,y[b], yerr=yerr[b])
 	plt.xticks(x,time_array, rotation = 65, fontsize = "xx-small")
 	plt.tight_layout()
 	plt.show()
