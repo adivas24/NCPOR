@@ -158,6 +158,8 @@ def animation(length, proj_string, show, save, savename, lon_var, lat_var,frameR
 		The name of the variable corresponding to longitude.
 	lat_var: str
 		The name of the variable corresponding to latitude.
+	frameRate: int
+		The millisecond interval between frames.
 	getDat: callable
 		An lambda instance of getShapeData, which takes time index 
 		offset as input. 
@@ -168,7 +170,6 @@ def animation(length, proj_string, show, save, savename, lon_var, lat_var,frameR
 	"""
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
-	#plt.style.use('seaborn-pastel')
 	fig = plt.figure()
 	ax = plt.axes(projection=proj)
 	xds, geometries = getDat(0)
@@ -281,6 +282,8 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, frameRate,
 	getV: callable
 		An lambda instance of getShapeData, which takes time index 
 		offset as input, corresponding to the v-component.
+	frameRate: int
+		Milliseconds between each frame.
 	lon_arr: array_like
 		A numpy array of longitudes.
 	lat_arr: array_like
@@ -330,7 +333,7 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, frameRate,
 		plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
 		plt.colorbar(orientation ='horizontal')
 		print(message+'['+str(i+1)+'/'+str(length+1)+']')
-		if(i == length and show == 1):
+		if(i == length and show):
 			print("To continue, close current plot window.") 
 		if(save):
 			plt.savefig("temp"+ str(i).zfill(4)+'.png', dpi = 'figure')
@@ -339,15 +342,17 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, frameRate,
 	
 	anim = FuncAnimation(fig, animate, frames=length+1, interval=1, blit=False, repeat=False, init_func = init)
 	message = "Displaying "
-	if(show == 1):
+	if(show):
 		plt.show()
 	
 
 	message = "Saving "
 	if(save):
-		if(show != 1):
+
+		if(!show):
 			for i in range(length+1):
 		 		animate(i)
+		print("Save will complete when the application is closed. gifs are saved in directory.")
 		import subprocess
 		import os
 		subprocess.call("convert -delay "+str(frameRate)+" temp*.png "+savename+".gif", shell=True)
@@ -370,9 +375,10 @@ def plotLines(y, yerr, time_array, variables):
 		containing the standard deviations to be plotted as values.
 	time_array: array_like
 		A list of time values to be plotted on the x-axis.
-	vatiables: array_like
-		A list containing the names of the variables that need to be 
-		plotted, in the form of strings.  
+	variables: array_like
+		A list of tuples containing the names of the variables and 
+		their units as strings that need to be plotted, in the form of
+		strings.  
 	
 	See Also
 	--------

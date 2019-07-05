@@ -61,7 +61,7 @@ def main():
 
 
 def getMultiSets(filenames):
-	global root,data, nb, chk_var_list1
+	global root,data, chk_var_list1
 	l1 = tk.Label(root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
 	chk_vars = dict()
@@ -82,36 +82,34 @@ def getMultiSets(filenames):
 	text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
 	
 	b1 = tk.Button(root, text = 'Combine')
-	b2 = tk.Button(root, text = 'More (Refresh list)')
+	#b2 = tk.Button(root, text = 'More (Refresh list)')
 	b3 = tk.Button(root, text = 'Done')
 
 	def combine_files():
 		nonlocal filenames2
+		nonlocal l1, l2, b3,  b1, text, chk_arr
 		global data
 		indxs = [a for a in filenames if chk_vars[a].get() == 1]
-		data,filenames2 = ffunc.combineFiles(data, filenames, indxs, var.get())
-
-
-	def getMore():
-		nonlocal l1, l2, b3, b2, b1, text, chk_arr
-		l2.destroy()
-		l1.destroy()
-		b1.destroy()
-		b2.destroy()
-		b3.destroy()
-		text.destroy()
-		for a in chk_arr.values():
-			a.destroy()
-		getMultiSets(filenames2)
+		if(len(indxs) > 1):
+			data,filenames2 = ffunc.combineFiles(data, filenames, indxs, var.get())
+			l2.destroy()
+			l1.destroy()
+			b1.destroy()
+			#b2.destroy()
+			b3.destroy()
+			text.destroy()
+			for a in chk_arr.values():
+				a.destroy()
+			getMultiSets(filenames2)
 
 
 	def createGUI():
-		nonlocal l1, l2, b2, b3, b1, text, chk_arr
+		nonlocal l1, l2,  b3, b1, text, chk_arr
 		global nb, root, chk_var_list1
 		l2.destroy()
 		l1.destroy()
 		b1.destroy()
-		b2.destroy()
+		#b2.destroy()
 		b3.destroy()
 		text.destroy()
 		for a in chk_arr.values():
@@ -121,7 +119,7 @@ def getMultiSets(filenames):
 		submenu1 = tk.Menu(root)
 		submenu1.add_command(label = "Calculator", command = dataSelector)
 		submenu1.add_command(label = "Time Series", command = plotGenerator)
-		submenu1.add_command(label = "Other plots")
+		#submenu1.add_command(label = "Other plots")
 		menu.add_command(label = "Plot on Map", command = plotWindow)
 		menu.add_command(label = "Export", command = exportToCSV)
 		menu.add_cascade(label = "Statistics", menu = submenu1)
@@ -134,10 +132,10 @@ def getMultiSets(filenames):
 				chk_var_list1[i][j].trace("w",trig)
 
 	b1.config(command = combine_files)
-	b2.config(command = getMore)
+	#b2.config(command = getMore)
 	b3.config(command = createGUI)
 	b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
-	b2.grid(row = i+1, column = 2)
+	#b2.grid(row = i+1, column = 2)
 	b3.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
 	root.grid_columnconfigure(1, minsize=30)
 	root.grid_columnconfigure(3, minsize=30)

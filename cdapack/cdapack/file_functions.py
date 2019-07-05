@@ -384,16 +384,16 @@ def getStats(dataSet, year_start, chk_status, variables, filt = None, lat_range 
 		If None (default), no filters are used.
 		If "bounds", then lat-lon bounds are used.
 		If "shapefile", then a shapefile geometry is used.
-	lat_range: slice
+	lat_range: slice, optional
 		A slice containing the index bounds for latitude. Required for 
 		"bounds" mode, ignored in others.
-	lon_range: slice
+	lon_range: slice, optional 
 		A slice containing the index bounds for longitude. Required for
 		"bounds" mode, ignored in others.
-	filename: str
+	filename: str, optional
 		The name of the shapefile being used. Required for "shapefile"
 		mode, ignored in others.
-	place: int
+	place: int, optional 
 		The index of the place being selected. None, in case of all.
 		Required for "shapefile" mode, ignored in others.
 	
@@ -476,21 +476,22 @@ def plotData(dataSet, start_time_index, end_time_index, time_interval, variables
 		and a string specifying the time period, namely 'years', 
 		'months', or 'days'.
 	variables: array_like
-		The list of variable names (as strings) that are being queried.
-	filt: str,optional
+		The list of tuples with variable names (as strings) and units 
+		(as strings) that are being queried.
+	filt: str, optional
 		If None (default), no filters are used.
 		If "bounds", then lat-lon bounds are used.
 		If "shapefile", then a shapefile geometry is used.
-	lat_range: slice
+	lat_range: slice, optional
 		A slice containing the index bounds for latitude. Required for 
 		"bounds" mode, ignored in others.
-	lon_range: slice
+	lon_range: slice, optional
 		A slice containing the index bounds for longitude. Required for
 		"bounds" mode, ignored in others.
-	filename: str
+	filename: str, optional 
 		The name of the shapefile being used. Required for "shapefile"
 		mode, ignored in others.
-	place: int
+	place: int, optional 
 		The index of the place being selected. None, in case of all.
 		Required for "shapefile" mode, ignored in others.
 
@@ -553,7 +554,7 @@ def plotData(dataSet, start_time_index, end_time_index, time_interval, variables
 			else:
 				while(a>curr_lim):
 					curr_lim +=time_step
-				if(len(temp[variables[0]]) != 0):
+				if(len(temp[variables[0][0]]) != 0):
 					time_array.append(curr_lim)
 					for b,x in variables:
 						arr_temp = np.array(temp[b])

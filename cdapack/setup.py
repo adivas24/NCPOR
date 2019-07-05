@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="cdapack",
-    version="0.0.4",
+    version="0.0.6",
     author="Aditya Vasudevan",
     author_email="aditya2499@gmail.com",
     #entry_points = {"console_scripts": ['cdapack = cdapack.driver:main']},
@@ -19,18 +19,18 @@ setuptools.setup(
     url="https://github.com/adivas24/NCPOR",
     packages=setuptools.find_packages(),
     install_requires = [
-    'cython>=0.29.11',
-    'geopandas>=0.5.0',
-    'xarray>=0.12.2',
-    'cartopy>=0.17.0',
-    'matplotlib>= 3.1.1',
-    'scipy>=1.3.0',
-    'numpy>=1.16.4',
-    'pandas>=0.24.2',
-    'shapely>=1.6.4.post2',
-    'python-dateutil>=2.8.0',
-    'netCDF4>=1.5.1.2',
-    'rasterio>=1.0.24'
+    'cython',
+    'geopandas',
+    'xarray',
+    'cartopy',
+    'matplotlib',
+    'scipy',
+    'numpy',
+    'pandas',
+    'shapely',
+    'python-dateutil',
+    'netCDF4',
+    'rasterio'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
