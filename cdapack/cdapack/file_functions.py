@@ -361,7 +361,7 @@ def applyShape(da1, lat_var, lon_var, shpfile, plac_ind, lat_r = None, lon_r = N
 	raster = features.rasterize(shape_i, out_shape=out_shape, fill = np.nan, transform = transform, dtype=float)
 	return raster, geometries
 
-def getStats(dataSet, year_start, chk_status, variables):
+def getStats(dataSet, year_start, chk_status, variables, filt = None, lat_range = None, lon_range = None, filename = None, place = None):
 	r"""Retrieves statistics for data from specifc periods.
 
 	This function takes in information about the times for which the 
@@ -380,7 +380,23 @@ def getStats(dataSet, year_start, chk_status, variables):
 		the inner dictionary.
 	variables: array_like
 		The list of variable names (as strings) that are being queried. 
-
+	filt: str,optional
+		If None (default), no filters are used.
+		If "bounds", then lat-lon bounds are used.
+		If "shapefile", then a shapefile geometry is used.
+	lat_range: slice
+		A slice containing the index bounds for latitude. Required for 
+		"bounds" mode, ignored in others.
+	lon_range: slice
+		A slice containing the index bounds for longitude. Required for
+		"bounds" mode, ignored in others.
+	filename: str
+		The name of the shapefile being used. Required for "shapefile"
+		mode, ignored in others.
+	place: int
+		The index of the place being selected. None, in case of all.
+		Required for "shapefile" mode, ignored in others.
+	
 	Returns
 	-------
 	final: dict
@@ -410,7 +426,13 @@ def getStats(dataSet, year_start, chk_status, variables):
 			if a.year in year_set:
 				for b in variables:
 					#THIS presumes that it has only three dimensions which is not true.
-					output[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
+					if (filt == None):
+						output[b].append(np.array(dataSet.variables[b].values[time_list.index(a),:,:]))
+					elif(filt == "bounds"):
+						output[b].append(np.array(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range]))
+					elif(filt == "shapefile"):
+						output[b].append(np.array(getShapeData(dataSet, b, time_list.index(a), filename, place)[0]))
+
 	else:
 		time_set = set([])
 		for year in list(chk_status.keys()):
@@ -420,7 +442,13 @@ def getStats(dataSet, year_start, chk_status, variables):
 		for a in time_list:
 			if (str(a.year)+"_"+str(a.month)) in time_set:
 				for b in variables:
-					output[b].append(dataSet.variables[b].values[time_list.index(a),:,:])
+					#THIS presumes that it has only three dimensions which is not true.
+					if (filt == None):
+						output[b].append(np.array(dataSet.variables[b].values[time_list.index(a),:,:]))
+					elif(filt == "bounds"):
+						output[b].append(np.array(dataSet.variables[b].values[time_list.index(a),lat_range,lon_range]))
+					elif(filt == "shapefile"):
+						output[b].append(np.array(getShapeData(dataSet, b, time_list.index(a), filename, place)[0]))
 	for a in variables:
 		output[a] = np.array(output[a])
 		final[a] = (np.nanmean(output[a]), np.nanstd(output[a]), np.nanmax(output[a]), np.nanmin(output[a]))
@@ -497,7 +525,7 @@ def plotData(dataSet, start_time_index, end_time_index, time_interval, variables
 	temp = dict()
 	time_array = []
 	flag = False
-	for b in variables:
+	for (b,x) in variables:
 		temp[b] = []
 		output_mean[b] = []
 		output_std[b] = []
@@ -508,7 +536,7 @@ def plotData(dataSet, start_time_index, end_time_index, time_interval, variables
 			break
 		if (a<curr_lim):
 			flag = True
-			for b in variables:
+			for (b,x) in variables:
 				if(filt == None):
 					temp[b].append(np.array(dataSet.variables[b].values[time_list.index(a),:,:]))
 				elif(filt == "bounds"):
@@ -518,7 +546,7 @@ def plotData(dataSet, start_time_index, end_time_index, time_interval, variables
 		else:
 			if(flag):
 				time_array.append(curr_lim-time_step)
-				for b in variables:
+				for (b,x) in variables:
 					arr_temp = np.array(temp[b])
 					output_mean[b].append(np.nanmean(arr_temp))
 					output_std[b].append(np.nanstd(arr_temp))
@@ -527,12 +555,12 @@ def plotData(dataSet, start_time_index, end_time_index, time_interval, variables
 					curr_lim +=time_step
 				if(len(temp[variables[0]]) != 0):
 					time_array.append(curr_lim)
-					for b in variables:
+					for b,x in variables:
 						arr_temp = np.array(temp[b])
 						output_mean[b].append(np.nanmean(arr_temp))
 						output_std[b].append(np.nanstd(arr_temp))
 			curr_lim+=time_step
-			for b in variables:
+			for b,x in variables:
 				if(filt == None):
 					temp[b] = [np.array(dataSet.variables[b].values[time_list.index(a),:,:])]
 				elif(filt == "bounds"):
@@ -540,9 +568,9 @@ def plotData(dataSet, start_time_index, end_time_index, time_interval, variables
 				elif(filt == "shapefile"):
 					temp[b] = [np.array(getShapeData(dataSet, b, time_list.index(a), filename, place)[0])]	
 			flag = False
-	if(len(temp[variables[0]]) != 0):
+	if(len(temp[variables[0][0]]) != 0):
 		time_array.append(curr_lim-time_step)
-		for b in variables:
+		for b,x in variables:
 			arr_temp = np.array(temp[b])
 			output_mean[b].append(np.nanmean(arr_temp))
 			output_std[b].append(np.nanstd(arr_temp))

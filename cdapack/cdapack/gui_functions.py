@@ -30,7 +30,7 @@ def main():
 	root = tk.Tk()
 	# Creation of the main tkinter window and starting the tcl/tk interpreter and storing the object reference in the variable present in gl_vars.py.
 
-	root.title('NetCDF file reader')
+	root.title('Climate Data Analysis Pack 0.0.4')
 	# Sets the title for the window. Later can be replaced by the actual name of the software.
 
 	filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
@@ -322,8 +322,10 @@ def openWindow(org):
 		varSave = tk.BooleanVar(window) # save file checkbutton
 		varShow = tk.BooleanVar(window) # show plot checkbutton
 		varSaveName = tk.StringVar(window) # newfile name
+		varFrameRate = tk.StringVar(window)
 		var.set(var_list[0])
 		varn.set("PlateCarree")
+		varFrameRate.set("150")
 		tk.Label(window, text = "Select type graph:").grid(row = 1, column = 0)
 		varRadio = tk.IntVar(window)
 		tk.Radiobutton(window, text = 'Map plot (fixed time)', variable = varRadio, value = 0).grid(row = 2, column = 0)
@@ -333,11 +335,13 @@ def openWindow(org):
 
 		proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
 		proj_list_reduced = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertCylindrical","Miller","Mollweide","Robinson","Sinusoidal","InterruptedGoodeHomolosine","RotatedPole","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","NorthPolarStereo","SouthPolarStereo"]
-		l1 =tk.Label(window, text = "Select variable: ")
+		l1 = tk.Label(window, text = "Select variable: ")
 		l2 = tk.Label(window, text = "Select time: ")
 		l3 = tk.Label(window, text = "Select projection: ")
 		l4 = tk.Label(window, text = "Select time range: ")
 		l5 = tk.Label(window, text = ".gif")
+		l6 = tk.Label(window, text = "Frame rate")
+		l7 = tk.Label(window, text = "microseconds")
 		om1 = tk.OptionMenu(window, var, *var_list)
 		sb1 = tk.Spinbox(window, values = time_range, textvariable = varSpin1)
 		sb2 = tk.Spinbox(window, values = time_range, textvariable = varSpin2)
@@ -345,9 +349,11 @@ def openWindow(org):
 		chb1 = tk.Checkbutton(window, text = "Use SHP file", variable = var2)
 		chb2 = tk.Checkbutton(window, text = "Savefile as", variable = varSave)
 		chb3 = tk.Checkbutton(window, text = "Display plot", variable = varShow)
+
 		ent1 = tk.Entry(window, textvariable = varSaveName)
+		ent2 = tk.Entry(window, textvariable = varFrameRate)
 		def plotSelect(event, a, b):
-			nonlocal l1, l2, l3, l4, om1, sb1, sb2, cb1, chb1
+			nonlocal l1, l2, l3, l4,l5,l6,l7, om1, sb1, sb2, cb1, chb1, chb2, chb3, ent1, ent2
 			var_t = varRadio.get()
 			if (var_t == 0):
 				l1.grid(row = 10, column = 0)
@@ -363,6 +369,9 @@ def openWindow(org):
 				chb3.grid_forget()
 				ent1.grid_forget()
 				l5.grid_forget()
+				l6.grid_forget()
+				l7.grid_forget()
+				ent2.grid_forget()
 			elif (var_t == 1):
 				l1.grid(row = 10, column = 0)
 				om1.grid(row = 10, column = 1)
@@ -379,6 +388,9 @@ def openWindow(org):
 				chb3.grid(row = 16, column = 0)
 				varShow.set(1)
 				varSaveName.set("default")
+				l6.grid(row = 17, column = 0)
+				ent2.grid(row = 17, column = 1)
+				l7.grid(row = 17, column = 2)
 				# More options wrt the animation can be added here.
 			elif (var_t == 2):
 				l1.grid_forget()
@@ -395,6 +407,9 @@ def openWindow(org):
 				chb3.grid_forget()
 				ent1.grid_forget()
 				l5.grid_forget()
+				l6.grid_forget()
+				l7.grid_forget()
+				ent2.grid_forget()
 				# add mods for color selection, maybe even make user-chosen projection style?
 			elif(var_t == 3):
 				l1.grid_forget()
@@ -410,6 +425,9 @@ def openWindow(org):
 				ent1.grid(row = 15, column = 1)
 				l5.grid(row = 15, column = 2)
 				chb3.grid(row = 16, column = 0)
+				l6.grid(row = 17, column = 0)
+				ent2.grid(row = 17, column = 1)
+				l7.grid(row = 17, column = 2)
 				varShow.set(1)
 				varSaveName.set('default')
 				# More option wrt animation to be added here.
@@ -426,6 +444,7 @@ def openWindow(org):
 			show = varShow.get()
 			save = varSave.get()
 			save_name = varSaveName.get()
+			frameRate = int(varFrameRate.get())
 			if(var2.get() == 1 and var3.get() != "ALL"):
 				plac_ind = places.index(var3.get())
 			elif(var3.get() == "ALL"):
@@ -435,7 +454,7 @@ def openWindow(org):
 				xds, geometries = ffunc.getShapeData(dataset, var_name, t1, filename, plac_ind)
 				pfunc.plotMapShape(proj_string, xds, lon_var, lat_var, geometries)
 			elif (org == 1):
-				pfunc.animation(t2-t1, proj_string,show, save, save_name,lon_var,lat_var, ffunc.animate_aux(dataset,var_name, t1, filename, plac_ind))
+				pfunc.animation(t2-t1, proj_string,show, save, save_name,lon_var,lat_var,frameRate, ffunc.animate_aux(dataset,var_name, t1, filename, plac_ind))
 			elif (org == 2):
 				xds1, geometries = ffunc.getShapeData(dataset, 'u10', t1, filename, plac_ind)
 				xds2, geometries = ffunc.getShapeData(dataset, 'v10', t1, filename, plac_ind)
@@ -444,7 +463,7 @@ def openWindow(org):
 				u_arr = np.array(xds1)
 				v_arr = np.array(xds2)
 				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
-				pfunc.vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity)
+				pfunc.vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity,varSpin1.get())
 			elif (org == 3):
 				getU,getV = ffunc.animate_aux(dataset,'u10',t1,filename,plac_ind), ffunc.animate_aux(dataset,'v10',t1,filename,plac_ind)
 				xds1, geometries = getU(0)
@@ -454,7 +473,7 @@ def openWindow(org):
 				u_arr = np.array(xds1)
 				v_arr = np.array(xds2)
 				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
-				pfunc.vectorAnim(t2-t1, proj_string,show, save, save_name, getU,getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_range)
+				pfunc.vectorAnim(t2-t1, proj_string,show, save, save_name, getU,getV, frameRate, lon_arr,lat_arr,u_arr, v_arr, velocity, time_range)
 		
 		varRadio.trace("w", plotSelect)
 		varRadio.set(0)
@@ -504,8 +523,12 @@ def openWindow(org):
 			if(varBnd.get() == 0 and filename is not None):
 				resized_array = np.array(out.data)
 			else:
-				resized_array = np.resize(out, [out.shape[0]* out.shape[1], out.shape[2]])
-			pd.DataFrame(resized_array).to_csv(asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]), header = None, index = None, na_rep = "NaN")
+				resized_array = np.array(out)
+			text = asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]).split('.')
+			index = 0
+			for index in range(resized_array.shape[0]):
+				name = text[0]+str(time_range[t1+index])+'.'+text[1]
+				pd.DataFrame(resized_array[index]).to_csv(name, header = None, index = None, na_rep = "NaN")
 			tk.Label(window, text = "Done").grid(row = 43, column = 1, columnspan = 2)
 		b1.config(command = saveCSV)
 	
@@ -564,7 +587,7 @@ def dataSelector():
 
 	xscrollbar.config(command=canvas.xview)
 	yscrollbar.config(command=canvas.yview)
-	frame = tk.Frame(canvas, width=1000,height=1000)
+	frame = tk.Frame(canvas, width=1000,height=2000)
 	canvas.create_window((0,0), window=frame, anchor='nw')
 	# vscrollbar = tk.Scrollbar(window)
 	# hscrollbar = tk.Scrollbar(window, orient = "horizontal")
@@ -584,6 +607,11 @@ def dataSelector():
 	tk.Radiobutton(frame, variable = var_time, value = 1, text = "Month").grid(row = 0, column = 2)
 	time_range = [pd.to_datetime(a).date() for a in list(dataset.variables['time'].values)]
 	time_range.sort()
+	tk.Label(frame, text = "Select filters:").grid(row = 625, column = 0)
+	val_filt = tk.IntVar(frame)
+	tk.Radiobutton(frame, variable = val_filt, value = 0, text = "No filters").grid(row = 626, column = 0)
+	tk.Radiobutton(frame, variable = val_filt, value = 1, text = "Lat-Lon bounds").grid(row = 626, column = 1)
+	tk.Radiobutton(frame, variable = val_filt, value = 2, text = "ShapeFile").grid(row = 626, column = 2)
 	tk.Label(frame, text = "Select variables:" ).grid(row = 820,column = 0)
 	var_var = dict()
 	num = 0
@@ -636,9 +664,88 @@ def dataSelector():
 			for i in range(0,year_end-year_start+1):
 				for m in range(12):
 					chk2[str(i+year_start)][months[m]][1].grid(row = 2+i, column = m+1)
+	lon_var,lat_var = ffunc.getLatLon(dataset)
+	lat_arr = list(dataset.variables[lat_var].values)
+	lat_arr2 = [str(a) for a in lat_arr]
+	lat_arr.sort()
+	lon_arr = list(dataset.variables[lon_var].values)
+	lon_arr2 = [str(a) for a in lon_arr]
+	lon_arr.sort()
+	lbl1 = tk.Label(frame, text = "Latitude Range:")
+	spn_box1 = tk.Spinbox(frame, values = lat_arr)
+	spn_box2 = tk.Spinbox(frame, values = lat_arr)
+	lbl2 = tk.Label(frame, text = "Longitude Range:")
+	spn_box3 = tk.Spinbox(frame, values = lon_arr)
+	spn_box4 = tk.Spinbox(frame, values = lon_arr)
+	filename = None
+	lbl3 = tk.Label(frame)
+	lbl4 = tk.Label(frame, text = "Select place:")
+	plc_var = tk.StringVar(frame)
+	cmb1 = ttk.Combobox(frame, textvariable = plc_var)
+	places = None
+	def selectFilter(event, b, c):
+		nonlocal places, filename
+		if (val_filt.get() == 0):
+			lbl1.grid_forget()
+			spn_box1.grid_forget()
+			spn_box2.grid_forget()
+			lbl2.grid_forget()
+			spn_box3.grid_forget()
+			spn_box4.grid_forget()
+			lbl3.grid_forget()
+			lbl4.grid_forget()
+			cmb1.grid_forget()
+			filename = None
+
+		elif (val_filt.get() == 1):
+			lbl1.grid(row = 727, column = 0)
+			spn_box1.grid(row = 727, column = 1)
+			spn_box2.grid(row = 727, column = 2)
+			lbl2.grid(row = 728, column = 0)
+			spn_box3.grid(row = 728, column = 1)
+			spn_box4.grid(row = 728, column = 2)
+			lbl3.grid_forget()
+			lbl4.grid_forget()
+			cmb1.grid_forget()
+			filename = None
+		elif(val_filt.get() == 2):
+			lbl1.grid_forget()
+			spn_box1.grid_forget()
+			spn_box2.grid_forget()
+			lbl2.grid_forget()
+			spn_box3.grid_forget()
+			spn_box4.grid_forget()
+			filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
+			if (filename == ""):
+				filename = None
+				val_filt.set(0)
+			else:
+				shp = gpd.read_file(filename)
+				#print(list(shp.columns))
+				# Searching in this above list and selecting the name variable seems like a good idea.
+				try:
+					places = list(shp['NAME'])
+				except:
+					places = list(shp['ST_NAME'])
+				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
+				#[Need to modify the selector to allow multiple places to be selected.]
+				places2 = [i for i in places if i is not None]
+				places2.append("ALL")
+				places2.sort()
+				lbl3.config(text=filename.split('/')[-1])
+				lbl3.grid(row = 727, column = 0)
+				lbl4.grid(row = 728, column = 0)
+				cmb1.config(values = places2)
+				cmb1.grid(row = 728, column = 1)
+
+	val_filt.trace("w", selectFilter)
+
+
+
 	def getStats():
 		nonlocal var_var, var_arr
 		var_arr = [key for key,value in var_var.items() if value.get()]
+		filt = val_filt.get()
 		if(not var_time.get()):
 			chk_status = [a.get() for a in var_rad]
 			year_param = year_start
@@ -649,7 +756,20 @@ def dataSelector():
 				for mon in months:
 					chk_status[str(dra)][mon] = chk2[str(dra)][mon][0].get()
 			year_param = None
-		outdict = ffunc.getStats(dataset, year_param, chk_status, var_arr)
+		if(val_filt.get() == 0):
+			outdict = ffunc.getStats(dataset, year_param, chk_status, var_arr)
+		elif(val_filt.get() == 1):
+			lat_r = [lat_arr2.index(spn_box1.get()),lat_arr2.index(spn_box2.get())]
+			lon_r = [lon_arr2.index(spn_box3.get()),lon_arr2.index(spn_box4.get())]
+			lat_r.sort()
+			lon_r.sort()
+			outdict = ffunc.getStats(dataset, year_param, chk_status, var_arr, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
+		elif(val_filt.get() == 2):
+			if(plc_var.get() == "ALL"):
+				plac_ind = None
+			else:
+				plac_ind = places.index(plc_var.get())
+			outdict = ffunc.getStats(dataset, year_param, chk_status, var_arr, filt = "shapefile", filename = filename, place = plac_ind)
 		outField.delete(1.0,tk.END)
 		outField.insert(tk.INSERT, ffunc.generateMessage(outdict))
 	var_time.trace("w", selectGrid)
@@ -657,7 +777,7 @@ def dataSelector():
 
 	b1 = tk.Button(frame, command = getStats, text = "Get statistics")
 	b1.grid(row = 1000, column = 0)
-	canvas.config(scrollregion = (0,0,1000,1000))
+	canvas.config(scrollregion = (0,0,2000,2000))
 
 	def select(event, b, c):
 		year = event.split('_')[0]
@@ -805,7 +925,8 @@ def plotGenerator():
 		start_time_index = time_range.index(varSpin.get())
 		end_time_index = time_range.index(varSpin_o.get())
 		time_interval = (int(varSpin1.get()), varSpin2.get())
-		variables = [key for key,value in var_var.items() if value.get() == 1]
+
+		variables = [(key,dataset.variables[key].attrs['units']) for key,value in var_var.items() if value.get() == 1]
 		if (val_filt.get() == 0):
 			output_mean, output_std, time_array = ffunc.plotData(dataset, start_time_index, end_time_index, time_interval, variables)
 		elif(val_filt.get() == 1):

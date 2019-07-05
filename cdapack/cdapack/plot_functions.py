@@ -13,7 +13,6 @@ file_functions
 driver
 
 """
-
 import xarray as xr
 import numpy as np
 
@@ -24,6 +23,46 @@ import matplotlib.dates as mdates
 from matplotlib.animation import FuncAnimation
 import matplotlib as mpl
 import matplotlib.cm as cm
+
+global proj_dict
+
+proj_dict = {
+# ALLOW SELECTION OF PARAMETERS TO THE PROJECTION. RIGHT NOW EVERYTHING IS SET TO DEFAULTS (ESPECIALLY UTM)
+"PlateCarree": ccrs.PlateCarree(),
+"AlbersEqualArea":ccrs.AlbersEqualArea(),
+"AzimuthalEquidistant":ccrs.AzimuthalEquidistant(),
+"EquidistantConic":ccrs.EquidistantConic(),
+"LambertConformal":ccrs.LambertConformal(),
+"LambertCylindrical":ccrs.LambertCylindrical(),
+"Mercator":ccrs.Mercator(),
+"Miller":ccrs.Miller(),
+"Mollweide":ccrs.Mollweide(),
+"Orthographic":ccrs.Orthographic(),
+"Robinson":ccrs.Robinson(),
+"Sinusoidal":ccrs.Sinusoidal(),
+"Stereographic":ccrs.Stereographic(),
+"TransverseMercator":ccrs.TransverseMercator(),
+"UTM":ccrs.UTM(5),
+"InterruptedGoodeHomolosine":ccrs.InterruptedGoodeHomolosine(),
+"RotatedPole":ccrs.RotatedPole(),
+"OSGB":ccrs.OSGB(),
+"EuroPP":ccrs.EuroPP(),
+"Geostationary":ccrs.Geostationary(),
+"NearsidePerspective":ccrs.NearsidePerspective(),
+"EckertI":ccrs.EckertI(),
+"EckertII":ccrs.EckertII(),
+"EckertIII":ccrs.EckertIII(),
+"EckertIV":ccrs.EckertIV(),
+"EckertV":ccrs.EckertV(),
+"EckertVI":ccrs.EckertVI(),
+"EqualEarth":ccrs.EqualEarth(),
+"Gnomonic":ccrs.Gnomonic(),
+"LambertAzimuthalEqualArea":ccrs.LambertAzimuthalEqualArea(),
+"NorthPolarStereo":ccrs.NorthPolarStereo(),
+"OSNI":ccrs.OSNI(),
+"SouthPolarStereo":ccrs.SouthPolarStereo()
+}
+
 
 # TODO	Plot only in a rectangular/polar range?
 #		Figure out how to modify the size of maps and maybe make it dynamic?
@@ -58,12 +97,12 @@ def plotMapShape(proj_string, xds, lon_var, lat_var, geometries):
     """
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
-	fig = plt.figure()
+	fig = plt.figure(str(xds.name)+ ' ('+proj_string+') ')
 	ax = plt.axes(projection=proj)
 	xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
 	if (geometries is not None):
 		ax.add_geometries(geometries, pc, edgecolor='gray', facecolor='none')
-	else: # geometries is None means that no SHAPEFILE was used.
+	else: # geometries is None means that no SHAPEFILE was used, hence using default coastlines.
 		ax.coastlines()
 	ax.set_global()
 	fig.text(0,0, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
@@ -90,46 +129,11 @@ def getProjection(proj_string):
 	--------
 	Cartopy.crs
 
-    """
-	proj_dict = {
-	# ALLOW SELECTION OF PARAMETERS TO THE PROJECTION. RIGHT NOW EVERYTHING IS SET TO DEFAULTS (ESPECIALLY UTM)
-	"PlateCarree": ccrs.PlateCarree(),
-	"AlbersEqualArea":ccrs.AlbersEqualArea(),
-	"AzimuthalEquidistant":ccrs.AzimuthalEquidistant(),
-	"EquidistantConic":ccrs.EquidistantConic(),
-	"LambertConformal":ccrs.LambertConformal(),
-	"LambertCylindrical":ccrs.LambertCylindrical(),
-	"Mercator":ccrs.Mercator(),
-	"Miller":ccrs.Miller(),
-	"Mollweide":ccrs.Mollweide(),
-	"Orthographic":ccrs.Orthographic(),
-	"Robinson":ccrs.Robinson(),
-	"Sinusoidal":ccrs.Sinusoidal(),
-	"Stereographic":ccrs.Stereographic(),
-	"TransverseMercator":ccrs.TransverseMercator(),
-	"UTM":ccrs.UTM(5),
-	"InterruptedGoodeHomolosine":ccrs.InterruptedGoodeHomolosine(),
-	"RotatedPole":ccrs.RotatedPole(),
-	"OSGB":ccrs.OSGB(),
-	"EuroPP":ccrs.EuroPP(),
-	"Geostationary":ccrs.Geostationary(),
-	"NearsidePerspective":ccrs.NearsidePerspective(),
-	"EckertI":ccrs.EckertI(),
-	"EckertII":ccrs.EckertII(),
-	"EckertIII":ccrs.EckertIII(),
-	"EckertIV":ccrs.EckertIV(),
-	"EckertV":ccrs.EckertV(),
-	"EckertVI":ccrs.EckertVI(),
-	"EqualEarth":ccrs.EqualEarth(),
-	"Gnomonic":ccrs.Gnomonic(),
-	"LambertAzimuthalEqualArea":ccrs.LambertAzimuthalEqualArea(),
-	"NorthPolarStereo":ccrs.NorthPolarStereo(),
-	"OSNI":ccrs.OSNI(),
-	"SouthPolarStereo":ccrs.SouthPolarStereo()
-	}
+	"""
+	global proj_dict
 	return proj_dict[proj_string]
 
-def animation(length, proj_string, show, save, savename, lon_var, lat_var, getDat):
+def animation(length, proj_string, show, save, savename, lon_var, lat_var,frameRate, getDat):
 	r"""Creates an animated gif that can be viewed or saved.
 
 	Plots the map depending on the specifications provided by the user.
@@ -164,7 +168,7 @@ def animation(length, proj_string, show, save, savename, lon_var, lat_var, getDa
 	"""
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string)
-	plt.style.use('seaborn-pastel')
+	#plt.style.use('seaborn-pastel')
 	fig = plt.figure()
 	ax = plt.axes(projection=proj)
 	xds, geometries = getDat(0)
@@ -179,14 +183,15 @@ def animation(length, proj_string, show, save, savename, lon_var, lat_var, getDa
 	# Placement depends on projection, gets messed up for all but the PlateCarree projection.
 	message = None
 	def init():
-		nonlocal cl
+		nonlocal cl, ax
+		ax.set_title(str(xds.name)+ ' ('+proj_string+ ')')
 		if (geometries is None):
 			cl.set_visible(True)
-		return cl,ax.title
+		return cl,
 
 	def animate(i):
 		nonlocal  mesh,cl,textvar1
-		xds, lon_var, lat_var, geometries = getDat(i)
+		xds, geometries = getDat(i)
 		mesh = xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, add_colorbar = False)
 		print(message+'['+str(i+1)+'/'+str(length+1)+']')
 		textvar1.set_text(ax.title.get_text()+ "\nMean: "+ str(np.nanmean(np.array(xds)))+ "\nStandard Deviation: "+ str(np.nanstd(np.array(xds))))
@@ -196,7 +201,7 @@ def animation(length, proj_string, show, save, savename, lon_var, lat_var, getDa
 		return mesh,cl,textvar1
 
 
-	anim = FuncAnimation(fig, animate, frames=length+1, interval=20, blit=True, repeat=False, init_func = init)
+	anim = FuncAnimation(fig, animate, frames=length+1, interval=frameRate, blit=True, repeat=False, init_func = init)
 	
 	if(show == 1):
 		message = "Displaying "
@@ -206,7 +211,7 @@ def animation(length, proj_string, show, save, savename, lon_var, lat_var, getDa
 		anim.save(savename+'.gif', writer='imagemagick')
 	
 
-def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity):
+def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity, timestamp):
 	r"""Plots a vector map of teh given data.
 
 	Plots a matplotlib quiver plot, with regrid shape of 30. It is a 
@@ -227,6 +232,8 @@ def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity):
 		A 2-d numpy array of datapoints corresponding to v-component.
 	velocity: array_like
 		A numpy array used for colour.
+	timestamp: str
+		The timestamp as a string.
 
 	Notes
 	-----
@@ -239,14 +246,16 @@ def vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity):
 	"""
 	pc = ccrs.PlateCarree()
 	proj = getProjection(proj_string) 
-	fig = plt.figure()
+	fig = plt.figure("Vector Plot: u10,v10 ")
 	ax = plt.axes(projection = proj)
+	ax.set_title(timestamp)
 	ax.coastlines()
 	plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
 	plt.colorbar(orientation = 'horizontal')
+	fig.text(0.5,0.09,"m/s")
 	plt.show()
 
-def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,lat_arr,u_arr, v_arr, velocity, time_array):
+def vectorAnim(length, proj_string, show, save, savename, getU, getV, frameRate, lon_arr,lat_arr,u_arr, v_arr, velocity, time_array):
 	r"""Creates an animated gif of a vector plot that can be viewed or saved.
 
 	Plots a matplotlib quiver and combines individual images into a gif
@@ -301,8 +310,9 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,la
 	fig = plt.figure()
 	ax = plt.axes(projection = proj)
 	ax.coastlines()
-	ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
-
+	plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+	plt.colorbar(orientation ='horizontal')
+	fig.text(0.5,0.1,"m/s")
 	def init():
 		ax.coastlines()
 		return ax.title
@@ -317,12 +327,14 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,la
 		u_arr = np.array(xds1)
 		v_arr = np.array(xds2)
 		velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
-		ax.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+		plt.quiver(lon_arr,lat_arr,u_arr, v_arr, velocity, transform = pc, regrid_shape = 30)
+		plt.colorbar(orientation ='horizontal')
 		print(message+'['+str(i+1)+'/'+str(length+1)+']')
 		if(i == length and show == 1):
 			print("To continue, close current plot window.") 
 		if(save):
 			plt.savefig("temp"+ str(i).zfill(4)+'.png', dpi = 'figure')
+		fig.text(0.5,0.09,"m/s")
 		plt.draw()
 	
 	anim = FuncAnimation(fig, animate, frames=length+1, interval=1, blit=False, repeat=False, init_func = init)
@@ -338,7 +350,7 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, lon_arr,la
 		 		animate(i)
 		import subprocess
 		import os
-		subprocess.call("convert -delay 40 temp*.png "+savename+".gif", shell=True)
+		subprocess.call("convert -delay "+str(frameRate)+" temp*.png "+savename+".gif", shell=True)
 		for i in range(length+1):
 			os.remove("temp"+str(i).zfill(4)+'.png')
 
@@ -368,8 +380,16 @@ def plotLines(y, yerr, time_array, variables):
 	matplotlib.pyplot.xticks
 	"""
 	x = mdates.date2num(time_array)
-	for b in variables:
-		plt.errorbar(x,y[b], yerr=yerr[b])
+	for (b,c) in variables:
+		plt.errorbar(x,y[b], yerr=yerr[b], label = str(b) + " (in "+ str(c)+")")
+	plt.legend()
+	if(len(variables) >1):
+		plt.ylabel("Variables")
+		plt.title("Variables-Time graph")
+	else:
+		plt.ylabel(variables[0][0])
+		plt.title(variables[0][0]+"-Time graph")
+	plt.xlabel("Time")
 	plt.xticks(x,time_array, rotation = 65, fontsize = "xx-small")
 	plt.tight_layout()
 	plt.show()
