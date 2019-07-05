@@ -373,4 +373,3 @@ def plotLines(y, yerr, time_array, variables):
 	plt.xticks(x,time_array, rotation = 65, fontsize = "xx-small")
 	plt.tight_layout()
 	plt.show()
-

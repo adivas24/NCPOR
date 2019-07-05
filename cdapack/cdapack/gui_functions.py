@@ -1,8 +1,8 @@
 # gui_functions.py #
 
-import gl_vars
-import file_functions as ffunc
-import plot_functions as pfunc
+
+from . import file_functions as ffunc
+from . import plot_functions as pfunc
 
 import tkinter as tk
 from tkinter import ttk
@@ -23,23 +23,26 @@ from datetime import datetime
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 # Create a ffunc. function to read shapefile and get locations.
 
+global data,root,nb,pages,chk_var_list1, chk_var_list2, chk_var_list3, spn_box_list, output, selBox, opBox
+
 def main():
-	gl_vars.root = tk.Tk()
+	global root, data
+	root = tk.Tk()
 	# Creation of the main tkinter window and starting the tcl/tk interpreter and storing the object reference in the variable present in gl_vars.py.
 
-	gl_vars.root.title('NetCDF file reader')
+	root.title('NetCDF file reader')
 	# Sets the title for the window. Later can be replaced by the actual name of the software.
 
 	filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
 	try:
 		temp= filenames[0]
 	except:
-		gl_vars.root.destroy()
+		root.destroy()
 		exit()
 	# This tkinter function creates a pop-up window through which the user can select multiple .nc files. filenames, contains the list of the names (with complete paths) stored in the form of strings, selected by the user.
 	# If no file is selected, the program terminates.
 
-	gl_vars.data = ffunc.openNETCDF(filenames)
+	data = ffunc.openNETCDF(filenames)
 	# This gets the data from the NETCDF files by utilising the function defined in file_functions.py. It returns a list of xarray Datasets, each corresponding to one of the .nc files selected.
 
 	file_names = [a.split('/')[-1] for a in filenames]
@@ -49,42 +52,44 @@ def main():
 	# This function prompts the user to select files which whose data is part of the same series, allowing queries whose timelines range across different files.
 	# Further, in the pop-up window, a button is created which, when pressed, will create the GUI. 
 
-	gl_vars.root.mainloop()
+	root.mainloop()
 	# This keeps the tkinter widgets active.
 
-	for a in list(gl_vars.data.values()):
+	for a in list(data.values()):
 		a.close()
 	#Cleanup. Closing files before end of program.
 
 
 def getMultiSets(filenames):
-	l1 = tk.Label(gl_vars.root, text = "Tick the ones you want to combine:")
+	global root,data, nb, chk_var_list1
+	l1 = tk.Label(root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
 	chk_vars = dict()
 	chk_arr = dict()
 
-	var = tk.StringVar(gl_vars.root)
+	var = tk.StringVar(root)
 	var.set("newFile")
 	i = 1
 	for a in filenames:
-		chk_vars[a] = tk.IntVar(gl_vars.root)
-		chk_arr[a] = tk.Checkbutton(gl_vars.root, text = a, variable = chk_vars[a])
+		chk_vars[a] = tk.IntVar(root)
+		chk_arr[a] = tk.Checkbutton(root, text = a, variable = chk_vars[a])
 		chk_arr[a].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
 		i+=1
-	l2 = tk.Label(gl_vars.root, text='Name for new set: ')
+	l2 = tk.Label(root, text='Name for new set: ')
 	l2.grid(row = i, column = 0, pady = 8, columnspan = 2, sticky = tk.W, padx = 10)
 	filenames2 = filenames
-	text = tk.Entry(gl_vars.root, textvariable = var)
+	text = tk.Entry(root, textvariable = var)
 	text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
 	
-	b1 = tk.Button(gl_vars.root, text = 'Combine')
-	b2 = tk.Button(gl_vars.root, text = 'More (Refresh list)')
-	b3 = tk.Button(gl_vars.root, text = 'Done')
+	b1 = tk.Button(root, text = 'Combine')
+	b2 = tk.Button(root, text = 'More (Refresh list)')
+	b3 = tk.Button(root, text = 'Done')
 
 	def combine_files():
 		nonlocal filenames2
+		global data
 		indxs = [a for a in filenames if chk_vars[a].get() == 1]
-		gl_vars.data,filenames2 = ffunc.combineFiles(gl_vars.data, filenames, indxs, var.get())
+		data,filenames2 = ffunc.combineFiles(data, filenames, indxs, var.get())
 
 
 	def getMore():
@@ -102,6 +107,7 @@ def getMultiSets(filenames):
 
 	def createGUI():
 		nonlocal l1, l2, b2, b3, b1, text, chk_arr
+		global nb, root, chk_var_list1
 		l2.destroy()
 		l1.destroy()
 		b1.destroy()
@@ -110,9 +116,9 @@ def getMultiSets(filenames):
 		text.destroy()
 		for a in chk_arr.values():
 			a.destroy()
-		gl_vars.nb = ttk.Notebook(gl_vars.root)
-		menu = tk.Menu(gl_vars.root)
-		submenu1 = tk.Menu(gl_vars.root)
+		nb = ttk.Notebook(root)
+		menu = tk.Menu(root)
+		submenu1 = tk.Menu(root)
 		submenu1.add_command(label = "Calculator", command = dataSelector)
 		submenu1.add_command(label = "Time Series", command = plotGenerator)
 		submenu1.add_command(label = "Other plots")
@@ -120,12 +126,12 @@ def getMultiSets(filenames):
 		menu.add_command(label = "Export", command = exportToCSV)
 		menu.add_cascade(label = "Statistics", menu = submenu1)
 
-		gl_vars.root.config(menu=menu)
+		root.config(menu=menu)
 		addPages(filenames2)
 		fillPages()
-		for i in gl_vars.chk_var_list1.keys():
-			for j in gl_vars.chk_var_list1[i].keys():
-				gl_vars.chk_var_list1[i][j].trace("w",trig)
+		for i in chk_var_list1.keys():
+			for j in chk_var_list1[i].keys():
+				chk_var_list1[i][j].trace("w",trig)
 
 	b1.config(command = combine_files)
 	b2.config(command = getMore)
@@ -133,129 +139,137 @@ def getMultiSets(filenames):
 	b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
 	b2.grid(row = i+1, column = 2)
 	b3.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
-	gl_vars.root.grid_columnconfigure(1, minsize=30)
-	gl_vars.root.grid_columnconfigure(3, minsize=30)
-	gl_vars.root.grid_columnconfigure(0, minsize=150)
-	gl_vars.root.grid_columnconfigure(4, minsize=150)
+	root.grid_columnconfigure(1, minsize=30)
+	root.grid_columnconfigure(3, minsize=30)
+	root.grid_columnconfigure(0, minsize=150)
+	root.grid_columnconfigure(4, minsize=150)
 
 def addPages(filenames):
-	gl_vars.pages = dict()
+	global pages, nb
+	pages = dict()
 	for i in filenames:
-		gl_vars.pages[i] = ttk.Frame(gl_vars.nb)
-		gl_vars.nb.add(gl_vars.pages[i], text = i)
-	gl_vars.nb.grid(row = 0, column = 0, columnspan=9, sticky = tk.E + tk.W, padx = 5)
+		pages[i] = ttk.Frame(nb)
+		nb.add(pages[i], text = i)
+	nb.grid(row = 0, column = 0, columnspan=9, sticky = tk.E + tk.W, padx = 5)
 
 def trig(event,b,c):
+	global chk_var_list1, spn_box_list 
 	dats = event.split('$')		
 	n1 = dats[2]
 	i = dats[1]
 	row_num = int(dats[3])
-	if (gl_vars.chk_var_list1[i][n1].get() == 0):
-		gl_vars.spn_box_list[i][n1][1].grid_forget() 
+	if (chk_var_list1[i][n1].get() == 0):
+		spn_box_list[i][n1][1].grid_forget() 
 	else:
-		gl_vars.spn_box_list[i][n1][1].grid(row = row_num, column = 2)
+		spn_box_list[i][n1][1].grid(row = row_num, column = 2)
 	
 def fillPages():
-	xr_dataSet = gl_vars.data
-	no_of_pages = len(gl_vars.pages)
-	gl_vars.chk_var_list1 = dict()
-	gl_vars.chk_var_list2 = dict()
-	gl_vars.chk_var_list3 = dict()
-	gl_vars.spn_box_list = dict()
-	for i in gl_vars.pages.keys():
+	global root, data, pages,chk_var_list1,chk_var_list2,chk_var_list3, spn_box_list, selBox, opBox
+	xr_dataSet = data
+	no_of_pages = len(pages)
+	chk_var_list1 = dict()
+	chk_var_list2 = dict()
+	chk_var_list3 = dict()
+	spn_box_list = dict()
+	for i in pages.keys():
 		dimension_list = list(xr_dataSet[i].coords.keys())
 		variable_list = list(xr_dataSet[i].data_vars.keys())
-		gl_vars.chk_var_list1[i] = dict()
-		gl_vars.chk_var_list2[i] = dict()
-		gl_vars.spn_box_list[i] = dict()
+		chk_var_list1[i] = dict()
+		chk_var_list2[i] = dict()
+		spn_box_list[i] = dict()
 		n1 = 0
-		gl_vars.chk_var_list3[i] = tk.IntVar(gl_vars.pages[i])
-		tk.Checkbutton(gl_vars.pages[i], text = "Use SHAPEFILE", variable = gl_vars.chk_var_list3[i]).grid(row = n1, column = 10)
+		chk_var_list3[i] = tk.IntVar(pages[i])
+		tk.Checkbutton(pages[i], text = "Use SHAPEFILE", variable = chk_var_list3[i]).grid(row = n1, column = 10)
 		for j in dimension_list:	
 			createSelRow(j, n1, i)
 			createSelBox(j, n1, i, list(xr_dataSet[i][j].values))
 			n1 += 1
 		n1+=5
 		n2 = 1
-		tk.Label(gl_vars.pages[i], text="Choose output variables:").grid(row = n1+1, column = 0)
+		tk.Label(pages[i], text="Choose output variables:").grid(row = n1+1, column = 0)
 		for k in variable_list:
 			createCheckBox(k, i, n1+1, n2)
 			n2 += 1
-	tk.Label(gl_vars.root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
-	gl_vars.selBox = tk.Text(gl_vars.root, height = 4, width = 5)
-	gl_vars.selBox.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
-	tk.Label(gl_vars.root, text="Output:").grid(column = 5, row = 90, sticky = tk.W, padx = 5, pady = 5)
-	gl_vars.opBox = tk.Text(gl_vars.root, height = 4, width = 5)
-	gl_vars.opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
-	tk.Button(gl_vars.root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
-	tk.Button(gl_vars.root, text = 'Close', command = gl_vars.root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
-	gl_vars.root.grid_columnconfigure(0, minsize=30)
-	gl_vars.root.grid_columnconfigure(1, minsize=150)
-	gl_vars.root.grid_columnconfigure(2, minsize=30)
-	gl_vars.root.grid_columnconfigure(3, minsize=150)
-	gl_vars.root.grid_columnconfigure(4, minsize=30)
-	gl_vars.root.grid_columnconfigure(5, minsize=150)
-	gl_vars.root.grid_columnconfigure(6, minsize=30)
-	gl_vars.root.grid_columnconfigure(7, minsize=30)
-	gl_vars.root.grid_columnconfigure(8, minsize=150)
-	#gl_vars.root.grid_rowconfigure(90, minsize=10)
-	gl_vars.root.grid_rowconfigure(91, minsize=20)
-	gl_vars.root.grid_rowconfigure(92, minsize=20)
-	gl_vars.root.grid_rowconfigure(93, minsize=20)
+	tk.Label(root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
+	selBox = tk.Text(root, height = 4, width = 5)
+	selBox.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	tk.Label(root, text="Output:").grid(column = 5, row = 90, sticky = tk.W, padx = 5, pady = 5)
+	opBox = tk.Text(root, height = 4, width = 5)
+	opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	tk.Button(root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
+	tk.Button(root, text = 'Close', command = root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
+	root.grid_columnconfigure(0, minsize=30)
+	root.grid_columnconfigure(1, minsize=150)
+	root.grid_columnconfigure(2, minsize=30)
+	root.grid_columnconfigure(3, minsize=150)
+	root.grid_columnconfigure(4, minsize=30)
+	root.grid_columnconfigure(5, minsize=150)
+	root.grid_columnconfigure(6, minsize=30)
+	root.grid_columnconfigure(7, minsize=30)
+	root.grid_columnconfigure(8, minsize=150)
+	root.grid_rowconfigure(91, minsize=20)
+	root.grid_rowconfigure(92, minsize=20)
+	root.grid_rowconfigure(93, minsize=20)
 
 def createSelRow(name, num, ind):
-	tk.Label(gl_vars.pages[ind], text = name).grid(row = num, column = 0)
-	gl_vars.chk_var_list1[ind][name] = tk.IntVar(gl_vars.pages[ind], name = "var$"+ind+ "$" + name + '$' + str(num+5))
-	r1 = tk.Radiobutton(gl_vars.pages[ind], text = 'Single', variable = gl_vars.chk_var_list1[ind][name], value = 0)
+	global pages, chk_var_list1
+	tk.Label(pages[ind], text = name).grid(row = num, column = 0)
+	chk_var_list1[ind][name] = tk.IntVar(pages[ind], name = "var$"+ind+ "$" + name + '$' + str(num+5))
+	r1 = tk.Radiobutton(pages[ind], text = 'Single', variable = chk_var_list1[ind][name], value = 0)
 	r1.grid(row = num, column = 1)
-	r2 = tk.Radiobutton(gl_vars.pages[ind], text = 'Range (Inclusive)', variable = gl_vars.chk_var_list1[ind][name], value = 1)
+	r2 = tk.Radiobutton(pages[ind], text = 'Range (Inclusive)', variable = chk_var_list1[ind][name], value = 1)
 	r2.grid(row = num, column = 2)
 
 def createSelBox(name, num, ind, value_list):
+	global pages, spn_box_list
 	value_list.sort()
-	tk.Label(gl_vars.pages[ind], text = name).grid(row = num+5, column = 0)
-	gl_vars.spn_box_list[ind][name] = [tk.Spinbox(gl_vars.pages[ind]), tk.Spinbox(gl_vars.pages[ind])]
-	gl_vars.spn_box_list[ind][name][0].configure(values=value_list)
-	gl_vars.spn_box_list[ind][name][0].grid(row = num+5, column = 1)
-	gl_vars.spn_box_list[ind][name][1].configure(values=value_list)
+	tk.Label(pages[ind], text = name).grid(row = num+5, column = 0)
+	spn_box_list[ind][name] = [tk.Spinbox(pages[ind]), tk.Spinbox(pages[ind])]
+	spn_box_list[ind][name][0].configure(values=value_list)
+	spn_box_list[ind][name][0].grid(row = num+5, column = 1)
+	spn_box_list[ind][name][1].configure(values=value_list)
 
 def createCheckBox(data_var, ind, num, num2):
-	gl_vars.chk_var_list2[ind][data_var] = tk.BooleanVar(gl_vars.pages[ind], name = "var$"+data_var+"$"+ind+"$"+str(num2-1))
-	tk.Checkbutton(gl_vars.pages[ind], text = data_var, variable = gl_vars.chk_var_list2[ind][data_var]).grid(row = num, column = num2)
+	global chk_var_list2, pages
+	chk_var_list2[ind][data_var] = tk.BooleanVar(pages[ind], name = "var$"+data_var+"$"+ind+"$"+str(num2-1))
+	tk.Checkbutton(pages[ind], text = data_var, variable = chk_var_list2[ind][data_var]).grid(row = num, column = num2)
 
 def getIndexes():
-	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
+	global nb, chk_var_list1,data,spn_box_list, chk_var_list2
+	i = nb.tab(nb.select(), "text")
 	rangeVar = dict()
-	for a in gl_vars.chk_var_list1[i].keys():
-		rangeVar[a] = gl_vars.chk_var_list1[i][a].get()
+	for a in chk_var_list1[i].keys():
+		rangeVar[a] = chk_var_list1[i][a].get()
 	messages = dict()
-	dimension_list = list(gl_vars.data[i].coords.keys())
+	dimension_list = list(data[i].coords.keys())
 	for x in dimension_list:
-		messages[x] = [gl_vars.spn_box_list[i][x][0].get()]
+		messages[x] = [spn_box_list[i][x][0].get()]
 		if(rangeVar[x]):
-			messages[x].append(gl_vars.spn_box_list[i][x][1].get())
+			messages[x].append(spn_box_list[i][x][1].get())
 		else:
 			messages[x].append(None)
 	outVar = dict()
-	for a in gl_vars.chk_var_list2[i].keys():
-		outVar[a] = gl_vars.chk_var_list2[i][a].get()
+	for a in chk_var_list2[i].keys():
+		outVar[a] = chk_var_list2[i][a].get()
 	return messages,outVar
 
 
 def printMessages(o_message, s_message):
-	gl_vars.selBox.delete(1.0,tk.END)
-	gl_vars.selBox.insert(tk.INSERT, s_message)
-	gl_vars.opBox.delete(1.0,tk.END)
-	gl_vars.opBox.insert(tk.INSERT, o_message)
+	global selBox, opBox
+	selBox.delete(1.0,tk.END)
+	selBox.insert(tk.INSERT, s_message)
+	opBox.delete(1.0,tk.END)
+	opBox.insert(tk.INSERT, o_message)
 
 def openWindow(org):
-	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
-	dataset = gl_vars.data[i]
+	global root,nb, data
+	i = nb.tab(nb.select(), "text")
+	dataset = data[i]
 	lon_var, lat_var = ffunc.getLatLon(dataset)
-	window = tk.Toplevel(gl_vars.root)
+	window = tk.Toplevel(root)
 	var2 = tk.IntVar(window) # shape file toggle
-	var_list = list(gl_vars.data[i].data_vars.keys())
-	time_range = [str(pd.to_datetime(a).date()) for a in list(gl_vars.data[i].variables['time'].values)]
+	var_list = list(data[i].data_vars.keys())
+	time_range = [str(pd.to_datetime(a).date()) for a in list(data[i].variables['time'].values)]
 	b1 = tk.Button(window, text = 'Confirm')
 	b1.grid(row = 90, column = 1)
 	var3 = tk.StringVar(window) #shapefile location selector
@@ -404,6 +418,7 @@ def openWindow(org):
 
 		def callPlotFunction():
 			nonlocal plac_ind
+			global data
 			var_name = var.get()
 			proj_string = varn.get()
 			t1 = time_range.index(varSpin1.get())
@@ -424,8 +439,8 @@ def openWindow(org):
 			elif (org == 2):
 				xds1, geometries = ffunc.getShapeData(dataset, 'u10', t1, filename, plac_ind)
 				xds2, geometries = ffunc.getShapeData(dataset, 'v10', t1, filename, plac_ind)
-				lon_arr = np.sort(((np.array(gl_vars.data[i].coords[lon_var]) + 180) % 360) -180)
-				lat_arr = np.array(gl_vars.data[i].coords[lat_var])
+				lon_arr = np.sort(((np.array(data[i].coords[lon_var]) + 180) % 360) -180)
+				lat_arr = np.array(data[i].coords[lat_var])
 				u_arr = np.array(xds1)
 				v_arr = np.array(xds2)
 				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
@@ -516,17 +531,18 @@ def exportToCSV():
 	openWindow(1)
 
 def retrieveData():
-	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
-	if (gl_vars.chk_var_list3[i].get() == 1):
+	global nb, chk_var_list3, data
+	i = nb.tab(nb.select(), "text")
+	if (chk_var_list3[i].get() == 1):
 		openWindow(2)
 	else:
 		msgs,outVar = getIndexes()
-		dataset = gl_vars.data[i]
-		sel_message, output_message = ffunc.getData(dataset, msgs,outVar)
+		sel_message, output_message = ffunc.getData(data[i], msgs,outVar)
 		printMessages(output_message,sel_message)
 
 def dataSelector():
-	window = tk.Toplevel(gl_vars.root)
+	global root, nb, data
+	window = tk.Toplevel(root)
 	#window.maxsize(width=0, height=100)
 	## THESE SCROLLBARS ARE UTTERLY USELESS NEED TO CORRECT THAT
 	## UPDATE: NOT useless anu
@@ -561,8 +577,8 @@ def dataSelector():
 	
 ##########################
 	var_time = tk.IntVar(frame)
-	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
-	dataset = gl_vars.data[i]
+	i = nb.tab(nb.select(), "text")
+	dataset = data[i]
 	tk.Label(frame, text = "Select data points by: ").grid(row = 0,column = 0)
 	tk.Radiobutton(frame, variable = var_time, value = 0, text = "Year").grid(row = 0, column = 1)
 	tk.Radiobutton(frame, variable = var_time, value = 1, text = "Month").grid(row = 0, column = 2)
@@ -659,9 +675,10 @@ def dataSelector():
 
 
 def plotGenerator():
-	i = gl_vars.nb.tab(gl_vars.nb.select(), "text")
-	dataset = gl_vars.data[i]
-	window = tk.Toplevel(gl_vars.root)
+	global nb,data, root
+	i = nb.tab(nb.select(), "text")
+	dataset = data[i]
+	window = tk.Toplevel(root)
 	time_range = [str(pd.to_datetime(a).date()) for a in list(dataset.variables['time'].values)]
 	tk.Label(window, text = "Time range: ").grid(row = 0, column = 0)
 	varSpin = tk.StringVar(window)
@@ -681,6 +698,7 @@ def plotGenerator():
 	tk.Radiobutton(window, variable = val_filt, value = 2, text = "ShapeFile").grid(row = 26, column = 2)
 
 	def fillValues(event, b, c):
+		global data
 		#IDEALLY THIS IS NOT REQUIRED, USER SHOULD BE ABLE TO ENTER WHATEVER THEY WANT.
 		if (varSpin2.get() == "years"):
 			arr = [a for a in range(1,21)]
@@ -692,7 +710,7 @@ def plotGenerator():
 	varSpin2.trace("w", fillValues)
 	
 	lon_var,lat_var = None, None
-	for a in list(gl_vars.data[i].dims):
+	for a in list(data[i].dims):
 		if (a.lower().startswith("lon")):
 			lon_var = a
 		if (a.lower().startswith("lat")):
