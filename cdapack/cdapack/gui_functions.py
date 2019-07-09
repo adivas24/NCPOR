@@ -495,6 +495,9 @@ def openWindow(org):
 
 		def saveCSV():
 			var_name = var.get()
+			lon_var,lat_var = ffunc.getLatLon(dataset)
+			lat_range = [str(a) for a in dataset.variables[lat_var].values]
+			lon_range = [str(a) for a in dataset.variables[lon_var].values]
 			t1 = time_range.index(varSpin1.get())
 			t2 = time_range.index(varSpin2.get())
 			time_t = [t1,t2]
@@ -502,9 +505,10 @@ def openWindow(org):
 			t3 = slice(time_t[0], time_t[1]+1)
 			if(varBnd.get() == 0):
 				msgs,outVar = getIndexes()
+				lat_range = lat_range[lat_range.index(msgs[lat_var][1]):lat_range.index(msgs[lat_var][0])+1]
+				lon_range = lon_range[lon_range.index(msgs[lon_var][0]):lon_range.index(msgs[lon_var][1])+1]
 				data_arr = ffunc.getData(dataset,msgs,outVar,variable = var_name)[1]
 				if (filename is not None):
-					lon_var,lat_var = ffunc.getLatLon(dataset)
 					lat_rn, lon_rn = dataset.coords[lat_var],dataset.coords[lon_var]
 					out = ffunc.applyShape(data_arr, lat_var, lon_var, filename, plac_ind, lat_r = lat_rn, lon_r = lon_rn)[0]
 				else:
@@ -513,7 +517,7 @@ def openWindow(org):
 				if (filename is not None):
 					out = [np.array(ffunc.getShapeData(dataset, var_name, time_t[0], filename, plac_ind)[0])]
 					for time_i in range(time_t[0], time_t[1]):
-						out.append(ffunc.getShapeData(dataset,var_name, time_i+1, filename, plac_ind)[0]) 
+						out.append(ffunc.getShapeData(dataset,var_name, time_i+1, filename, plac_ind)[0])
 					#This segment takes a long long time to execute. Please keep that in mind. Hence, testing is also not thorough.
 					out = np.array(out)
 				else:
@@ -524,9 +528,14 @@ def openWindow(org):
 				resized_array = np.array(out)
 			text = asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]).split('.')
 			index = 0
+			lon_range.insert(0,'lat/lon')
 			for index in range(resized_array.shape[0]):
+				temp_array = np.empty((resized_array[index].shape[0],resized_array[index].shape[1]+1))
+				for i in range(resized_array[index].shape[0]):
+					temp_array[i][0] = lat_range[i]
+					temp_array[i][1:] = resized_array[index][i]
 				name = text[0]+str(time_range[t1+index])+'.'+text[1]
-				pd.DataFrame(resized_array[index]).to_csv(name, header = None, index = None, na_rep = "NaN")
+				pd.DataFrame(temp_array).to_csv(name, header = lon_range, index = False, na_rep = "NaN")
 			tk.Label(window, text = "Done").grid(row = 43, column = 1, columnspan = 2)
 		b1.config(command = saveCSV)
 	
