@@ -204,7 +204,7 @@ def animation(length, proj_string, show, save, savename, lon_var, lat_var,frameR
 
 	anim = FuncAnimation(fig, animate, frames=length+1, interval=frameRate, blit=True, repeat=False, init_func = init)
 	
-	if(show == 1):
+	if(show):
 		message = "Displaying "
 		plt.show()
 	if(save):
@@ -349,7 +349,7 @@ def vectorAnim(length, proj_string, show, save, savename, getU, getV, frameRate,
 	message = "Saving "
 	if(save):
 
-		if(!show):
+		if(not show):
 			for i in range(length+1):
 		 		animate(i)
 		print("Save will complete when the application is closed. gifs are saved in directory.")
