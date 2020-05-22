@@ -21,9 +21,8 @@ from datetime import datetime
 
 # TODO	Go through and clean up code.
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
-# Create a ffunc. function to read shapefile and get locations.
 
-global data,root,nb,pages,chk_var_list1, chk_var_list2, chk_var_list3, spn_box_list, output, selBox, opBox
+global data, root, nb, chk_var_list1, chk_var_list2, chk_var_list3, spn_box_list, selBox, opBox
 
 def main():
 	global root, data
@@ -34,168 +33,190 @@ def main():
 	# Sets the title for the window. Later can be replaced by the actual name of the software.
 
 	filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
-	try:
-		temp= filenames[0]
-	except:
+	if (len(filenames) < 1):
 		root.destroy()
 		exit()
 	# This tkinter function creates a pop-up window through which the user can select multiple .nc files. filenames, contains the list of the names (with complete paths) stored in the form of strings, selected by the user.
 	# If no file is selected, the program terminates.
-
 	data = ffunc.openNETCDF(filenames)
 	# This gets the data from the NETCDF files by utilising the function defined in file_functions.py. It returns a list of xarray Datasets, each corresponding to one of the .nc files selected.
 
-	file_names = [a.split('/')[-1] for a in filenames]
+	filenames = [name.split('/')[-1] for name in filenames]
 	# Slicing the names so that they contains only the filename, and not the entire path.
 
-	getMultiSets(file_names)
+	getMultiSets(filenames)
 	# This function prompts the user to select files which whose data is part of the same series, allowing queries whose timelines range across different files.
 	# Further, in the pop-up window, a button is created which, when pressed, will create the GUI. 
 
 	root.mainloop()
 	# This keeps the tkinter widgets active.
 
-	for a in list(data.values()):
-		a.close()
+	for dataset in list(data.values()):
+		dataset.close()
 	#Cleanup. Closing files before end of program.
 
 
 def getMultiSets(filenames):
-	global root,data, chk_var_list1
+	
+	global root, data, chk_var_list1
+	
 	l1 = tk.Label(root, text = "Tick the ones you want to combine:")
 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
-	chk_vars = dict()
-	chk_arr = dict()
+	
+	file_chk_vars = dict()
+	chk_btn_dict = dict()
 
-	var = tk.StringVar(root)
-	var.set("newFile")
+	newName = tk.StringVar(root)
+	newName.set("newFile")
+	
 	i = 1
-	for a in filenames:
-		chk_vars[a] = tk.IntVar(root)
-		chk_arr[a] = tk.Checkbutton(root, text = a, variable = chk_vars[a])
-		chk_arr[a].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
-		i+=1
+	for filename in filenames:
+		file_chk_vars[filename] = tk.BooleanVar(root)
+		chk_btn_dict[filename] = tk.Checkbutton(root, text = filename, variable = file_chk_vars[filename])
+		chk_btn_dict[filename].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
+		i += 1
+	
 	l2 = tk.Label(root, text='Name for new set: ')
 	l2.grid(row = i, column = 0, pady = 8, columnspan = 2, sticky = tk.W, padx = 10)
+	
 	filenames2 = filenames
-	text = tk.Entry(root, textvariable = var)
+	
+	text = tk.Entry(root, textvariable = newName)
 	text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
 	
 	b1 = tk.Button(root, text = 'Combine')
-	#b2 = tk.Button(root, text = 'More (Refresh list)')
-	b3 = tk.Button(root, text = 'Done')
+	b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
+	
+	b2 = tk.Button(root, text = 'Done')
+	b2.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
 
 	def combine_files():
-		nonlocal filenames2
-		nonlocal l1, l2, b3,  b1, text, chk_arr
+		
+		nonlocal filenames2, l1, l2, b1,  b2, text, chk_btn_dict
 		global data
-		indxs = [a for a in filenames if chk_vars[a].get() == 1]
+		
+		indxs = [filename for filename in filenames if file_chk_vars[filename].get()]
 		if(len(indxs) > 1):
-			data,filenames2 = ffunc.combineFiles(data, filenames, indxs, var.get())
-			l2.destroy()
+			data,filenames2 = ffunc.combineFiles(data, filenames, indxs, newName.get())
 			l1.destroy()
+			l2.destroy()
 			b1.destroy()
-			#b2.destroy()
-			b3.destroy()
+			b2.destroy()
 			text.destroy()
-			for a in chk_arr.values():
-				a.destroy()
+			for btn in chk_btn_dict.values():
+				btn.destroy()
 			getMultiSets(filenames2)
 
-
 	def createGUI():
-		nonlocal l1, l2,  b3, b1, text, chk_arr
+
+		nonlocal l1, l2,  b2, b1, text, chk_btn_dict
 		global nb, root, chk_var_list1
-		l2.destroy()
+		
 		l1.destroy()
+		l2.destroy()
 		b1.destroy()
-		#b2.destroy()
-		b3.destroy()
+		b2.destroy()
 		text.destroy()
-		for a in chk_arr.values():
-			a.destroy()
+		for btn in chk_btn_dict.values():
+			btn.destroy()
+		
 		nb = ttk.Notebook(root)
+		
 		menu = tk.Menu(root)
+		menu.add_command(label = "Plot on Map", command = plotWindow)
+		menu.add_command(label = "Export", command = exportToCSV)
+		
 		submenu1 = tk.Menu(root)
 		submenu1.add_command(label = "Calculator", command = dataSelector)
 		submenu1.add_command(label = "Time Series", command = plotGenerator)
-		#submenu1.add_command(label = "Other plots")
-		menu.add_command(label = "Plot on Map", command = plotWindow)
-		menu.add_command(label = "Export", command = exportToCSV)
 		menu.add_cascade(label = "Statistics", menu = submenu1)
 
 		root.config(menu=menu)
-		addPages(filenames2)
-		fillPages()
-		for i in chk_var_list1.keys():
-			for j in chk_var_list1[i].keys():
-				chk_var_list1[i][j].trace("w",trig)
+		
+		pages = addPages(filenames2)
+		fillPages(pages)
+		
+		for filename in chk_var_list1.keys():
+			for dim in chk_var_list1[filename].keys():
+				chk_var_list1[filename][dim].trace("w",trig)
 
 	b1.config(command = combine_files)
-	#b2.config(command = getMore)
-	b3.config(command = createGUI)
-	b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
-	#b2.grid(row = i+1, column = 2)
-	b3.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
+	b2.config(command = createGUI)
+	
+	root.grid_columnconfigure(0, minsize=150)
 	root.grid_columnconfigure(1, minsize=30)
 	root.grid_columnconfigure(3, minsize=30)
-	root.grid_columnconfigure(0, minsize=150)
 	root.grid_columnconfigure(4, minsize=150)
 
 def addPages(filenames):
-	global pages, nb
+	global nb
 	pages = dict()
-	for i in filenames:
-		pages[i] = ttk.Frame(nb)
-		nb.add(pages[i], text = i)
+	for filename in filenames:
+		pages[filename] = ttk.Frame(nb)
+		nb.add(pages[filename], text = filename)
 	nb.grid(row = 0, column = 0, columnspan=9, sticky = tk.E + tk.W, padx = 5)
+	return pages
 
 def trig(event,b,c):
 	global chk_var_list1, spn_box_list 
-	dats = event.split('$')		
-	n1 = dats[2]
-	i = dats[1]
-	row_num = int(dats[3])
-	if (chk_var_list1[i][n1].get() == 0):
-		spn_box_list[i][n1][1].grid_forget() 
+	variable_name = event.split('$')
+	dim = variable_name[2]
+	filename = variable_name[1]
+	row_num = int(variable_name[3])
+	if (chk_var_list1[filename][dim].get() == 0):
+		spn_box_list[filename][dim][1].grid_forget() 
 	else:
-		spn_box_list[i][n1][1].grid(row = row_num, column = 2)
+		spn_box_list[filename][dim][1].grid(row = row_num, column = 2)
 	
-def fillPages():
-	global root, data, pages,chk_var_list1,chk_var_list2,chk_var_list3, spn_box_list, selBox, opBox
-	xr_dataSet = data
-	no_of_pages = len(pages)
+def fillPages(pages):
+
+	global root, data, chk_var_list1, chk_var_list2, chk_var_list3, spn_box_list, selBox, opBox
+
 	chk_var_list1 = dict()
 	chk_var_list2 = dict()
 	chk_var_list3 = dict()
 	spn_box_list = dict()
-	for i in pages.keys():
-		dimension_list = list(xr_dataSet[i].coords.keys())
-		variable_list = list(xr_dataSet[i].data_vars.keys())
-		chk_var_list1[i] = dict()
-		chk_var_list2[i] = dict()
-		spn_box_list[i] = dict()
-		n1 = 0
-		chk_var_list3[i] = tk.IntVar(pages[i])
-		tk.Checkbutton(pages[i], text = "Use SHAPEFILE", variable = chk_var_list3[i]).grid(row = n1, column = 10)
-		for j in dimension_list:	
-			createSelRow(j, n1, i)
-			createSelBox(j, n1, i, list(xr_dataSet[i][j].values))
-			n1 += 1
-		n1+=5
-		n2 = 1
-		tk.Label(pages[i], text="Choose output variables:").grid(row = n1+1, column = 0)
-		for k in variable_list:
-			createCheckBox(k, i, n1+1, n2)
-			n2 += 1
+
+	for filename in pages.keys():
+		
+		dimension_list = list(data[filename].coords.keys())
+		variable_list = list(data[filename].data_vars.keys())
+		
+		dim_count = len(dimension_list)
+
+		chk_var_list1[filename] = dict()
+		chk_var_list2[filename] = dict()
+		spn_box_list[filename] = dict()
+		
+		row_num = 0
+		chk_var_list3[filename] = tk.IntVar(pages[filename])
+		tk.Checkbutton(pages[filename], text = "Use SHAPEFILE", variable = chk_var_list3[filename]).grid(row = row_num, column = 10)
+		
+		for dim in dimension_list:	
+			chk_var_list1[filename][dim] = createSelRow(pages[filename], dim, row_num, filename, row_num+dim_count)
+			spn_box_list[filename][dim] = createSelBox(pages[filename],dim, row_num+dim_count, list(data[filename][dim].values))
+			row_num += 1
+		
+		row_num+=dim_count
+		
+		tk.Label(pages[filename], text="Choose output variables:").grid(row = row_num+1, column = 0)
+		
+		col_num = 1
+		for data_var in variable_list:
+			chk_var_list2[filename][data_var] = createCheckBox(pages[filename],data_var, row_num+1, col_num)
+			col_num += 1
+	
 	tk.Label(root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
 	selBox = tk.Text(root, height = 4, width = 5)
 	selBox.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	
 	tk.Label(root, text="Output:").grid(column = 5, row = 90, sticky = tk.W, padx = 5, pady = 5)
 	opBox = tk.Text(root, height = 4, width = 5)
 	opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+	
 	tk.Button(root, text = 'Retrieve data', command = retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
 	tk.Button(root, text = 'Close', command = root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
+	
 	root.grid_columnconfigure(0, minsize=30)
 	root.grid_columnconfigure(1, minsize=150)
 	root.grid_columnconfigure(2, minsize=30)
@@ -209,65 +230,60 @@ def fillPages():
 	root.grid_rowconfigure(92, minsize=20)
 	root.grid_rowconfigure(93, minsize=20)
 
-def createSelRow(name, num, ind):
-	global pages, chk_var_list1
-	tk.Label(pages[ind], text = name).grid(row = num, column = 0)
-	chk_var_list1[ind][name] = tk.IntVar(pages[ind], name = "var$"+ind+ "$" + name + '$' + str(num+5))
-	r1 = tk.Radiobutton(pages[ind], text = 'Single', variable = chk_var_list1[ind][name], value = 0)
-	r1.grid(row = num, column = 1)
-	r2 = tk.Radiobutton(pages[ind], text = 'Range (Inclusive)', variable = chk_var_list1[ind][name], value = 1)
-	r2.grid(row = num, column = 2)
+def createSelRow(page, dim_name, row_num, filename, space):
+	tk.Label(page, text = dim_name).grid(row = row_num, column = 0)
+	var_radio = tk.IntVar(page, name = "var$"+filename+ "$" + dim_name + '$' + str(space))
+	tk.Radiobutton(page, text = 'Single'           , variable = var_radio, value = 0).grid(row = row_num, column = 1)
+	tk.Radiobutton(page, text = 'Range (Inclusive)', variable = var_radio, value = 1).grid(row = row_num, column = 2)
+	return var_radio
 
-def createSelBox(name, num, ind, value_list):
-	global pages, spn_box_list
+def createSelBox(page, dim_name, row_num, value_list):
 	value_list.sort()
-	tk.Label(pages[ind], text = name).grid(row = num+5, column = 0)
-	spn_box_list[ind][name] = [tk.Spinbox(pages[ind]), tk.Spinbox(pages[ind])]
-	spn_box_list[ind][name][0].configure(values=value_list)
-	spn_box_list[ind][name][0].grid(row = num+5, column = 1)
-	spn_box_list[ind][name][1].configure(values=value_list)
+	tk.Label(page, text = dim_name).grid(row = row_num, column = 0)
+	spn_box_list = [tk.Spinbox(page, values = value_list), tk.Spinbox(page, values = value_list)]
+	spn_box_list[0].grid(row = row_num, column = 1)
+	return spn_box_list
 
-def createCheckBox(data_var, ind, num, num2):
-	global chk_var_list2, pages
-	chk_var_list2[ind][data_var] = tk.BooleanVar(pages[ind], name = "var$"+data_var+"$"+ind+"$"+str(num2-1))
-	tk.Checkbutton(pages[ind], text = data_var, variable = chk_var_list2[ind][data_var]).grid(row = num, column = num2)
+def createCheckBox(page, data_var, row_num, col_num):
+	data_var_var = tk.BooleanVar(page)
+	tk.Checkbutton(page, text = data_var, variable = data_var_var).grid(row = row_num, column = col_num)
+	return data_var_var
 
 def getIndexes():
-	global nb, chk_var_list1,data,spn_box_list, chk_var_list2
-	i = nb.tab(nb.select(), "text")
-	rangeVar = dict()
-	for a in chk_var_list1[i].keys():
-		rangeVar[a] = chk_var_list1[i][a].get()
+	global nb, chk_var_list1, chk_var_list2, data, spn_box_list
+	
+	filename = nb.tab(nb.select(), "text")
 	messages = dict()
-	dimension_list = list(data[i].coords.keys())
-	for x in dimension_list:
-		messages[x] = [spn_box_list[i][x][0].get()]
-		if(rangeVar[x]):
-			messages[x].append(spn_box_list[i][x][1].get())
-		else:
-			messages[x].append(None)
 	outVar = dict()
-	for a in chk_var_list2[i].keys():
-		outVar[a] = chk_var_list2[i][a].get()
+	
+	for dim in chk_var_list1[filename].keys():
+		messages[dim] = [spn_box_list[filename][dim][0].get()]
+		if(chk_var_list1[filename][dim].get()):
+			messages[dim].append(spn_box_list[filename][dim][1].get())
+		else:
+			messages[dim].append(None)
+	
+	for data_var in chk_var_list2[filename].keys():
+		outVar[data_var] = chk_var_list2[filename][data_var].get()
 	return messages,outVar
 
 
 def printMessages(o_message, s_message):
 	global selBox, opBox
-	selBox.delete(1.0,tk.END)
+	selBox.delete(1.0, tk.END)
 	selBox.insert(tk.INSERT, s_message)
-	opBox.delete(1.0,tk.END)
+	opBox.delete(1.0, tk.END)
 	opBox.insert(tk.INSERT, o_message)
 
 def openWindow(org):
-	global root,nb, data
-	i = nb.tab(nb.select(), "text")
-	dataset = data[i]
+	global root, nb, data
+	filename = nb.tab(nb.select(), "text")
+	dataset = data[filename]
 	lon_var, lat_var = ffunc.getLatLon(dataset)
 	window = tk.Toplevel(root)
 	var2 = tk.IntVar(window) # shape file toggle
-	var_list = list(data[i].data_vars.keys())
-	time_range = [str(pd.to_datetime(a).date()) for a in list(data[i].variables['time'].values)]
+	var_list = list(data[filename].data_vars.keys())
+	time_range = [str(pd.to_datetime(a).date()) for a in list(data[filename].variables['time'].values)]
 	b1 = tk.Button(window, text = 'Confirm')
 	b1.grid(row = 90, column = 1)
 	var3 = tk.StringVar(window) #shapefile location selector
@@ -306,11 +322,9 @@ def openWindow(org):
 		elif(var2.get() == 0):
 			filename = None
 			plac_ind = None
-
 			combo1.grid_forget()
 			la1.grid_forget()
 			la2.grid_forget()
-	output = None
 	if (org == 0):
 		#Map plot
 		var = tk.StringVar(window) # variable selector
@@ -456,8 +470,8 @@ def openWindow(org):
 			elif (org == 2):
 				xds1, geometries = ffunc.getShapeData(dataset, 'u10', t1, filename, plac_ind)
 				xds2, geometries = ffunc.getShapeData(dataset, 'v10', t1, filename, plac_ind)
-				lon_arr = np.sort(((np.array(data[i].coords[lon_var]) + 180) % 360) -180)
-				lat_arr = np.array(data[i].coords[lat_var])
+				lon_arr = np.sort(((np.array(data[filename].coords[lon_var]) + 180) % 360) -180)
+				lat_arr = np.array(data[filename].coords[lat_var])
 				u_arr = np.array(xds1)
 				v_arr = np.array(xds2)
 				velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
@@ -562,12 +576,12 @@ def exportToCSV():
 
 def retrieveData():
 	global nb, chk_var_list3, data
-	i = nb.tab(nb.select(), "text")
-	if (chk_var_list3[i].get() == 1):
+	filename = nb.tab(nb.select(), "text")
+	if (chk_var_list3[filename].get() == 1):
 		openWindow(2)
 	else:
 		msgs,outVar = getIndexes()
-		sel_message, output_message = ffunc.getData(data[i], msgs,outVar)
+		sel_message, output_message = ffunc.getData(data[filename], msgs,outVar)
 		printMessages(output_message,sel_message)
 
 def dataSelector():
@@ -607,8 +621,8 @@ def dataSelector():
 	
 ##########################
 	var_time = tk.IntVar(frame)
-	i = nb.tab(nb.select(), "text")
-	dataset = data[i]
+	filename = nb.tab(nb.select(), "text")
+	dataset = data[filename]
 	tk.Label(frame, text = "Select data points by: ").grid(row = 0,column = 0)
 	tk.Radiobutton(frame, variable = var_time, value = 0, text = "Year").grid(row = 0, column = 1)
 	tk.Radiobutton(frame, variable = var_time, value = 1, text = "Month").grid(row = 0, column = 2)
@@ -803,8 +817,8 @@ def dataSelector():
 
 def plotGenerator():
 	global nb,data, root
-	i = nb.tab(nb.select(), "text")
-	dataset = data[i]
+	filename = nb.tab(nb.select(), "text")
+	dataset = data[filename]
 	window = tk.Toplevel(root)
 	time_range = [str(pd.to_datetime(a).date()) for a in list(dataset.variables['time'].values)]
 	tk.Label(window, text = "Time range: ").grid(row = 0, column = 0)
@@ -837,7 +851,7 @@ def plotGenerator():
 	varSpin2.trace("w", fillValues)
 	
 	lon_var,lat_var = None, None
-	for a in list(data[i].dims):
+	for a in list(data[filename].dims):
 		if (a.lower().startswith("lon")):
 			lon_var = a
 		if (a.lower().startswith("lat")):
