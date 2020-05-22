@@ -1,5 +1,5 @@
 # NCPOR
-Summer Project at NCPOR under teh guidance of Dr. Rohit Srivastava
+Summer Project at NCPOR under the guidance of Dr. Rohit Srivastava
 
 # Title
 Development of a climate data analysis package in Python
