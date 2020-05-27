@@ -1,4 +1,4 @@
-from .gui_functions import CDAPack
+from gui_functions import CDAPack
 
 cda = CDAPack()
 cda.main()

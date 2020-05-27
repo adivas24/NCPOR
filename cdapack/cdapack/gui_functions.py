@@ -1,7 +1,7 @@
 # gui_functions.py #
 
-from .file_functions import FileHandler
-from .plot_functions import PlotMaps, plotLines
+from file_functions import FileHandler, combineFiles
+from plot_functions import PlotMaps, plotLines
 
 import tkinter as tk
 from tkinter import ttk
@@ -21,6 +21,76 @@ from datetime import datetime
 # TODO	Go through and clean up code.
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
+
+class FirstGUI(object):
+
+	def __init__(self, parent_object, filenames):
+		self.parent = parent_object
+		self.filenames = filenames
+
+	def getMultiSets(self):
+			
+		self.l1 = tk.Label(self.parent.root, text = "Tick the ones you want to combine:")
+		self.l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
+		
+		self.file_chk_vars = dict()
+		self.chk_btn_dict = dict()
+
+		newName = tk.StringVar(self.parent.root)
+		newName.set("newFile")
+		
+		i = 1
+		for filename in self.filenames:
+			self.file_chk_vars[filename] = tk.BooleanVar(self.parent.root)
+			self.chk_btn_dict[filename] = tk.Checkbutton(self.parent.root, text = filename, variable = self.file_chk_vars[filename])
+			self.chk_btn_dict[filename].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
+			i += 1
+		
+		self.l2 = tk.Label(self.parent.root, text='Name for new set: ')
+		self.l2.grid(row = i, column = 0, pady = 8, columnspan = 2, sticky = tk.W, padx = 10)
+		
+		
+		self.text = tk.Entry(self.parent.root, textvariable = newName)
+		self.text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
+		
+		self.b1 = tk.Button(self.parent.root, text = 'Combine')
+		self.b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
+		
+		self.b2 = tk.Button(self.parent.root, text = 'Done')
+		self.b2.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
+
+		self.b1.config(command = self.combine_files)
+		self.b2.config(command = self.createGUI)
+		
+		self.parent.root.grid_columnconfigure(0, minsize=150)
+		self.parent.root.grid_columnconfigure(1, minsize=30)
+		self.parent.root.grid_columnconfigure(3, minsize=30)
+		self.parent.root.grid_columnconfigure(4, minsize=150)
+	
+	def combine_files(self):
+					
+		indxs = [filename for filename in self.filenames if self.file_chk_vars[filename].get()]
+		if(len(indxs) > 1):
+			self.parent.file_handler.data,self.filenames = combineFiles(self.parent.file_handler.data, self.filenames, indxs, newName.get())
+			self.cleanFirstGUI()
+			self.getMultiSets()
+	
+	def createGUI(self):
+		self.cleanFirstGUI()
+		self.parent.createCoreGUI()			
+	
+	def cleanFirstGUI(self):
+		
+		self.l1.destroy()
+		self.l2.destroy()
+		self.b1.destroy()
+		self.b2.destroy()
+		self.text.destroy()
+		for btn in self.chk_btn_dict.values():
+			btn.destroy()
+
+
+
 class CDAPack(object):
 	file_handler = None
 	root = None
@@ -36,125 +106,122 @@ class CDAPack(object):
 		pass
 
 	def main(self):
-		self.root = tk.Tk()
+		
 		# Creation of the main tkinter window and starting the tcl/tk interpreter and storing the object reference in the variable present in gl_vars.py.
+		self.root = tk.Tk()
 
-		self.root.title('Climate Data Analysis Pack 0.0.4')
 		# Sets the title for the window. Later can be replaced by the actual name of the software.
+		self.root.title('Climate Data Analysis Pack 0.0.4')
+
+		# This tkinter function creates a pop-up window through which the user can select multiple .nc files. filenames, contains the list of the names (with complete paths) stored in the form of strings, selected by the user.
+		# If no file is selected, the program terminates.
 		filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
 		if (len(filenames) < 1):
 			self.root.destroy()
 			exit()
 
+		# Creates a file_handler object which allows us to use various file-related functionalities.
 		self.file_handler = FileHandler(filenames)
 		
-		# This tkinter function creates a pop-up window through which the user can select multiple .nc files. filenames, contains the list of the names (with complete paths) stored in the form of strings, selected by the user.
-		# If no file is selected, the program terminates.
 
-		# This gets the data from the NETCDF files by utilising the function defined in file_functions.py. It returns a list of xarray Datasets, each corresponding to one of the .nc files selected.
-
-		filenames = self.file_handler.filenames
-		# Slicing the names so that they contains only the filename, and not the entire path.
-
-		self.getMultiSets(filenames)
 		# This function prompts the user to select files which whose data is part of the same series, allowing queries whose timelines range across different files.
-		# Further, in the pop-up window, a button is created which, when pressed, will create the GUI. 
+		# Further, in the pop-up window, a button is created which, when pressed, will create the GUI.
+		gui_class = FirstGUI(self,self.file_handler.filenames)
+		gui_class.getMultiSets()
+		#self.getMultiSets(self.file_handler.filenames)
 
-		self.root.mainloop()
 		# This keeps the tkinter widgets active.
+		self.root.mainloop()
 
+		#Cleanup. Closing files before end of program.
 		for dataset in list(self.file_handler.data.values()):
 			dataset.close()
-		#Cleanup. Closing files before end of program.
 
+	# def getMultiSets(self,filenames):
+			
+	# 	l1 = tk.Label(self.root, text = "Tick the ones you want to combine:")
+	# 	l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
+		
+	# 	file_chk_vars = dict()
+	# 	chk_btn_dict = dict()
 
-	def getMultiSets(self,filenames):
-			
-		l1 = tk.Label(self.root, text = "Tick the ones you want to combine:")
-		l1.grid(row = 0, column  = 0,ipadx = 10, pady = 10, columnspan = 5, sticky = tk.W)
+	# 	newName = tk.StringVar(self.root)
+	# 	newName.set("newFile")
 		
-		file_chk_vars = dict()
-		chk_btn_dict = dict()
+	# 	i = 1
+	# 	for filename in filenames:
+	# 		file_chk_vars[filename] = tk.BooleanVar(self.root)
+	# 		chk_btn_dict[filename] = tk.Checkbutton(self.root, text = filename, variable = file_chk_vars[filename])
+	# 		chk_btn_dict[filename].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
+	# 		i += 1
+		
+	# 	l2 = tk.Label(self.root, text='Name for new set: ')
+	# 	l2.grid(row = i, column = 0, pady = 8, columnspan = 2, sticky = tk.W, padx = 10)
+		
+	# 	filenames2 = filenames
+		
+	# 	text = tk.Entry(self.root, textvariable = newName)
+	# 	text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
+		
+	# 	b1 = tk.Button(self.root, text = 'Combine')
+	# 	b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
+		
+	# 	b2 = tk.Button(self.root, text = 'Done')
+	# 	b2.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
 
-		newName = tk.StringVar(self.root)
-		newName.set("newFile")
-		
-		i = 1
-		for filename in filenames:
-			file_chk_vars[filename] = tk.BooleanVar(self.root)
-			chk_btn_dict[filename] = tk.Checkbutton(self.root, text = filename, variable = file_chk_vars[filename])
-			chk_btn_dict[filename].grid(row = i, column = 0, columnspan = 5, ipadx = 20, sticky = tk.W, pady = 3)
-			i += 1
-		
-		l2 = tk.Label(self.root, text='Name for new set: ')
-		l2.grid(row = i, column = 0, pady = 8, columnspan = 2, sticky = tk.W, padx = 10)
-		
-		filenames2 = filenames
-		
-		text = tk.Entry(self.root, textvariable = newName)
-		text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
-		
-		b1 = tk.Button(self.root, text = 'Combine')
-		b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
-		
-		b2 = tk.Button(self.root, text = 'Done')
-		b2.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
+	# 	def cleanFirstGUI():
+			
+	# 		nonlocal l1, l2,  b2, b1, text, chk_btn_dict
+	# 		l1.destroy()
+	# 		l2.destroy()
+	# 		b1.destroy()
+	# 		b2.destroy()
+	# 		text.destroy()
+	# 		for btn in chk_btn_dict.values():
+	# 			btn.destroy()			
 
-		def combine_files():
+	# 	def combine_files():
 			
-			nonlocal filenames2, l1, l2, b1,  b2, text, chk_btn_dict
+	# 		nonlocal filenames2
 			
-			indxs = [filename for filename in filenames if file_chk_vars[filename].get()]
-			if(len(indxs) > 1):
-				self.file_handler.data,filenames2 = self.file_handler.combineFiles(self.file_handler.data, filenames, indxs, newName.get())
-				l1.destroy()
-				l2.destroy()
-				b1.destroy()
-				b2.destroy()
-				text.destroy()
-				for btn in chk_btn_dict.values():
-					btn.destroy()
-				self.getMultiSets(filenames2)
+	# 		indxs = [filename for filename in filenames if file_chk_vars[filename].get()]
+	# 		if(len(indxs) > 1):
+	# 			self.file_handler.data,filenames2 = self.file_handler.combineFiles(self.file_handler.data, filenames, indxs, newName.get())
+	# 			cleanFirstGUI()
+	# 			self.getMultiSets(filenames2)
 
-		def createGUI():
+	# 	def createGUI():
+	# 		cleanFirstGUI()
+	# 		self.createCoreGUI()			
 
-			nonlocal l1, l2,  b2, b1, text, chk_btn_dict
-			
-			l1.destroy()
-			l2.destroy()
-			b1.destroy()
-			b2.destroy()
-			text.destroy()
-			for btn in chk_btn_dict.values():
-				btn.destroy()
-			
-			self.nb = ttk.Notebook(self.root)
-			
-			menu = tk.Menu(self.root)
-			menu.add_command(label = "Plot on Map", command = self.plotWindow)
-			menu.add_command(label = "Export", command = self.exportToCSV)
-			
-			submenu1 = tk.Menu(self.root)
-			submenu1.add_command(label = "Calculator", command = self.dataSelector)
-			submenu1.add_command(label = "Time Series", command = self.plotGenerator)
-			menu.add_cascade(label = "Statistics", menu = submenu1)
-
-			self.root.config(menu=menu)
-			
-			pages = self.addPages(filenames2)
-			self.fillPages(pages)
-			
-			for filename in self.chk_var_list1.keys():
-				for dim in self.chk_var_list1[filename].keys():
-					self.chk_var_list1[filename][dim].trace("w",self.trig)
-
-		b1.config(command = combine_files)
-		b2.config(command = createGUI)
+	# 	b1.config(command = combine_files)
+	# 	b2.config(command = createGUI)
 		
-		self.root.grid_columnconfigure(0, minsize=150)
-		self.root.grid_columnconfigure(1, minsize=30)
-		self.root.grid_columnconfigure(3, minsize=30)
-		self.root.grid_columnconfigure(4, minsize=150)
+	# 	self.root.grid_columnconfigure(0, minsize=150)
+	# 	self.root.grid_columnconfigure(1, minsize=30)
+	# 	self.root.grid_columnconfigure(3, minsize=30)
+	# 	self.root.grid_columnconfigure(4, minsize=150)
+
+	def createCoreGUI(self):
+		self.nb = ttk.Notebook(self.root)
+		
+		menu = tk.Menu(self.root)
+		menu.add_command(label = "Plot on Map", command = self.plotWindow)
+		menu.add_command(label = "Export", command = self.exportToCSV)
+		
+		submenu1 = tk.Menu(self.root)
+		submenu1.add_command(label = "Calculator", command = self.dataSelector)
+		submenu1.add_command(label = "Time Series", command = self.plotGenerator)
+		menu.add_cascade(label = "Statistics", menu = submenu1)
+
+		self.root.config(menu=menu)
+		
+		pages = self.addPages(filenames2)
+		self.fillPages(pages)
+		
+		for filename in self.chk_var_list1.keys():
+			for dim in self.chk_var_list1[filename].keys():
+				self.chk_var_list1[filename][dim].trace("w",self.trig)
 
 	def addPages(self,filenames):
 		pages = dict()

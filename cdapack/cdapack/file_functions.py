@@ -634,45 +634,6 @@ class FileHandler(object):
 		"""
 		return lambda i: self.getShapeData(dataset,var_name, time + i, shpfile, plac_ind)
 
-	def combineFiles(self,dataSet, filenames, indxs, newName):
-		r"""Combines compatible NETCDF files.
-
-		The functions combines specified files into a merged dataset.
-		Modifies both the dataset and the filename array. As of now,
-		the function does not check for compatibility.
-
-		Parameters
-		----------
-		dataSet: xarray Dataset
-			The dataset from which data is to be retrieved.  
-		filenames: array_like
-			A list of all existing opened files.
-		indxs: array_like
-			List of indexes of files that need to be combined.
-		newName: str
-			Name of merged dataset.
-		
-		Returns
-		-------
-		copy: xarray Dataset
-			The modified dataset.
-		filenames2: array_like
-			Modified list of files.
-
-		See Also
-		--------
-		xarray.merge
-
-		"""	
-		data_mod = [dataSet[a] for a in indxs]
-		merged = xr.merge(data_mod)
-		filenames2 = [a for a in filenames if a not in indxs]
-		copy = dict()
-		for a in filenames2:
-			copy[a] = dataSet[a]
-		copy[newName] = merged
-		filenames2.append(newName)
-		return copy, filenames2
 
 	def generateMessage(self,data_dict):
 		r"""Converts a dictionary of stats to a string.
@@ -738,3 +699,43 @@ class FileHandler(object):
 		if lat_var is None or lon_var is None:
 			raise Exception("Variables for latitude and longitude not found.")
 		return lon_var,lat_var
+
+def combineFiles(dataSet, filenames, indxs, newName):
+	r"""Combines compatible NETCDF files.
+
+	The functions combines specified files into a merged dataset.
+	Modifies both the dataset and the filename array. As of now,
+	the function does not check for compatibility.
+
+	Parameters
+	----------
+	dataSet: xarray Dataset
+		The dataset from which data is to be retrieved.  
+	filenames: array_like
+		A list of all existing opened files.
+	indxs: array_like
+		List of indexes of files that need to be combined.
+	newName: str
+		Name of merged dataset.
+	
+	Returns
+	-------
+	copy: xarray Dataset
+		The modified dataset.
+	filenames2: array_like
+		Modified list of files.
+
+	See Also
+	--------
+	xarray.merge
+
+	"""	
+	data_mod = [dataSet[a] for a in indxs]
+	merged = xr.merge(data_mod)
+	filenames2 = [a for a in filenames if a not in indxs]
+	copy = dict()
+	for a in filenames2:
+		copy[a] = dataSet[a]
+	copy[newName] = merged
+	filenames2.append(newName)
+	return copy, filenames2
