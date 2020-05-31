@@ -39,6 +39,13 @@ class FileHandler(object):
 		self.data = self.openNETCDF(list(filenames))
 		self.filenames = list(self.data.keys())
 	
+	def __del__(self):
+		for dataset in list(self.data.values()):
+			dataset.close()
+
+	def getFilenames(self):
+		return self.filenames
+
 	def openNETCDF(self,filepaths):
 		r"""Opens the files given as arguments.
 
@@ -369,8 +376,7 @@ class FileHandler(object):
 
 		"""	
 
-		open_file = gpd.read_file(shpfile)	
-		shapes = [(shape, n) for n,shape in enumerate(open_file.geometry)]
+		shapes = [(shape, n) for n,shape in enumerate(shpfile.geometry)]
 		geometries = [sgeom.shape(a[0]) for a in shapes]
 		try:
 			lat = np.asarray(da1.coords[lat_var])
@@ -634,7 +640,6 @@ class FileHandler(object):
 		"""
 		return lambda i: self.getShapeData(dataset,var_name, time + i, shpfile, plac_ind)
 
-
 	def generateMessage(self,data_dict):
 		r"""Converts a dictionary of stats to a string.
 
@@ -699,6 +704,15 @@ class FileHandler(object):
 		if lat_var is None or lon_var is None:
 			raise Exception("Variables for latitude and longitude not found.")
 		return lon_var,lat_var
+
+	def openShapeFile(self,shp_filename):
+		shp_file = gpd.read_file(shp_filename)
+		#TODO Search in list(shp.columns) instead of this.
+		try:
+			list_places = list(shp_file['NAME'])
+		except:
+			list_places = list(shp_file['ST_NAME'])
+		return shp_file,list_places
 
 def combineFiles(dataSet, filenames, indxs, newName):
 	r"""Combines compatible NETCDF files.

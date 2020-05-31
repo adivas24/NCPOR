@@ -13,7 +13,6 @@ file_functions
 driver
 
 """
-import xarray as xr
 import numpy as np
 
 import cartopy 
@@ -27,9 +26,45 @@ import matplotlib.cm as cm
 # TODO	Plot only in a rectangular/polar range?
 #		Figure out how to modify the size of maps and maybe make it dynamic?
 
+proj_dict = {
+	# ALLOW SELECTION OF PARAMETERS TO THE PROJECTION. RIGHT NOW EVERYTHING IS SET TO DEFAULTS (ESPECIALLY UTM)
+	"PlateCarree": ccrs.PlateCarree(),
+	"AlbersEqualArea":ccrs.AlbersEqualArea(),
+	"AzimuthalEquidistant":ccrs.AzimuthalEquidistant(),
+	"EquidistantConic":ccrs.EquidistantConic(),
+	"LambertConformal":ccrs.LambertConformal(),
+	"LambertCylindrical":ccrs.LambertCylindrical(),
+	"Mercator":ccrs.Mercator(),
+	"Miller":ccrs.Miller(),
+	"Mollweide":ccrs.Mollweide(),
+	"Orthographic":ccrs.Orthographic(),
+	"Robinson":ccrs.Robinson(),
+	"Sinusoidal":ccrs.Sinusoidal(),
+	"Stereographic":ccrs.Stereographic(),
+	"TransverseMercator":ccrs.TransverseMercator(),
+	"UTM":ccrs.UTM(5),
+	"InterruptedGoodeHomolosine":ccrs.InterruptedGoodeHomolosine(),
+	"RotatedPole":ccrs.RotatedPole(),
+	"OSGB":ccrs.OSGB(),
+	"EuroPP":ccrs.EuroPP(),
+	"Geostationary":ccrs.Geostationary(),
+	"NearsidePerspective":ccrs.NearsidePerspective(),
+	"EckertI":ccrs.EckertI(),
+	"EckertII":ccrs.EckertII(),
+	"EckertIII":ccrs.EckertIII(),
+	"EckertIV":ccrs.EckertIV(),
+	"EckertV":ccrs.EckertV(),
+	"EckertVI":ccrs.EckertVI(),
+	"EqualEarth":ccrs.EqualEarth(),
+	"Gnomonic":ccrs.Gnomonic(),
+	"LambertAzimuthalEqualArea":ccrs.LambertAzimuthalEqualArea(),
+	"NorthPolarStereo":ccrs.NorthPolarStereo(),
+	"OSNI":ccrs.OSNI(),
+	"SouthPolarStereo":ccrs.SouthPolarStereo()
+}
+
 class PlotMaps(object):
 	def __init__(self):
-		pass
 
 	def plotMapShape(self,proj_string, xds, lon_var, lat_var, geometries):
 		r"""Plots the data on a cartopy map.
@@ -60,7 +95,7 @@ class PlotMaps(object):
 
 	    """
 		pc = ccrs.PlateCarree()
-		proj = self.getProjection(proj_string)
+		proj = proj_dict[proj_string]
 		fig = plt.figure(str(xds.name)+ ' ('+proj_string+') ')
 		ax = plt.axes(projection=proj)
 		xds.plot.pcolormesh(ax=ax, transform=pc, x=lon_var, y=lat_var, cbar_kwargs=dict(orientation='horizontal'))
@@ -72,65 +107,6 @@ class PlotMaps(object):
 		fig.text(0,0, "Mean: "+ str(np.nanmean(np.array(xds)))+ " Standard Deviation: "+ str(np.nanstd(np.array(xds))))
 		plt.show()
 
-	def getProjection(self,proj_string):
-		r"""Returns a cartopy projection object, given a string.
-
-		Takes in a string as input, and returns an instance of cartopy 
-		projection, corresponding to the string. Some projections have
-		additional options, which need to be incorporated in a later update.
-
-		Parameters
-		----------
-		proj_string: str
-			The name of the selected projection (must be from avaiable 
-			Cartopy options).
-		
-		Returns
-		-------
-		Cartopy projection instance.
-
-		See Also
-		--------
-		Cartopy.crs
-
-		"""
-		proj_dict = {
-			# ALLOW SELECTION OF PARAMETERS TO THE PROJECTION. RIGHT NOW EVERYTHING IS SET TO DEFAULTS (ESPECIALLY UTM)
-			"PlateCarree": ccrs.PlateCarree(),
-			"AlbersEqualArea":ccrs.AlbersEqualArea(),
-			"AzimuthalEquidistant":ccrs.AzimuthalEquidistant(),
-			"EquidistantConic":ccrs.EquidistantConic(),
-			"LambertConformal":ccrs.LambertConformal(),
-			"LambertCylindrical":ccrs.LambertCylindrical(),
-			"Mercator":ccrs.Mercator(),
-			"Miller":ccrs.Miller(),
-			"Mollweide":ccrs.Mollweide(),
-			"Orthographic":ccrs.Orthographic(),
-			"Robinson":ccrs.Robinson(),
-			"Sinusoidal":ccrs.Sinusoidal(),
-			"Stereographic":ccrs.Stereographic(),
-			"TransverseMercator":ccrs.TransverseMercator(),
-			"UTM":ccrs.UTM(5),
-			"InterruptedGoodeHomolosine":ccrs.InterruptedGoodeHomolosine(),
-			"RotatedPole":ccrs.RotatedPole(),
-			"OSGB":ccrs.OSGB(),
-			"EuroPP":ccrs.EuroPP(),
-			"Geostationary":ccrs.Geostationary(),
-			"NearsidePerspective":ccrs.NearsidePerspective(),
-			"EckertI":ccrs.EckertI(),
-			"EckertII":ccrs.EckertII(),
-			"EckertIII":ccrs.EckertIII(),
-			"EckertIV":ccrs.EckertIV(),
-			"EckertV":ccrs.EckertV(),
-			"EckertVI":ccrs.EckertVI(),
-			"EqualEarth":ccrs.EqualEarth(),
-			"Gnomonic":ccrs.Gnomonic(),
-			"LambertAzimuthalEqualArea":ccrs.LambertAzimuthalEqualArea(),
-			"NorthPolarStereo":ccrs.NorthPolarStereo(),
-			"OSNI":ccrs.OSNI(),
-			"SouthPolarStereo":ccrs.SouthPolarStereo()
-			}
-		return proj_dict[proj_string]
 
 	def animation(self,length, proj_string, show, save, savename, lon_var, lat_var,frameRate, getDat):
 		r"""Creates an animated gif that can be viewed or saved.
@@ -168,7 +144,7 @@ class PlotMaps(object):
 		matplotlib.animation
 		"""
 		pc = ccrs.PlateCarree()
-		proj = self.getProjection(proj_string)
+		proj = proj_dict[proj_string]
 		fig = plt.figure()
 		ax = plt.axes(projection=proj)
 		xds, geometries = getDat(0)
@@ -245,7 +221,7 @@ class PlotMaps(object):
 		matplotlib.pyplot.quiver
 		"""
 		pc = ccrs.PlateCarree()
-		proj = self.getProjection(proj_string) 
+		proj = proj_dict[proj_string] 
 		fig = plt.figure("Vector Plot: u10,v10 ")
 		ax = plt.axes(projection = proj)
 		ax.set_title(timestamp)
@@ -308,7 +284,7 @@ class PlotMaps(object):
 
 		"""
 		pc = ccrs.PlateCarree()
-		proj = self.getProjection(proj_string) 
+		proj = proj_dict[proj_string] 
 		fig = plt.figure()
 		ax = plt.axes(projection = proj)
 		ax.coastlines()
@@ -347,7 +323,6 @@ class PlotMaps(object):
 
 		message = "Saving "
 		if(save):
-
 			if(not show):
 				for i in range(length+1):
 			 		animate(i)

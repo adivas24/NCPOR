@@ -1,88 +1,164 @@
 # gui_functions.py #
 
 from file_functions import FileHandler, combineFiles
-from plot_functions import PlotMaps, plotLines
+from plot_functions import PlotMaps, plotLines, proj_dict
 
+# Used for creating the GUI.
 import tkinter as tk
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename, askopenfilenames, asksaveasfilename
 
-# Used for creating the GUI.
-
+# Used for data retrieval and manipulation.
 import numpy as np
 import pandas as pd
-import geopandas as gpd
-import xarray as xr
-# Used for data retrieval and manipulation.
 
+#Used for converting datetime to date.
 from datetime import datetime
-#Used for converting datetime to date. 
 
 # TODO	Go through and clean up code.
 #		Exception and error handling needs to be done. Input and pre-condition validation are important.
 
-class PlotGenerator(object):
-	def __init__(self, parent):
+
+class CalculatorWindow(object):
+	def __init__(self,parent):
+		# TODO Code for creating scroll bars. Reimplement.
+		# window.grid_rowconfigure(0, weight=1)
+		# window.grid_columnconfigure(0, weight=1)
+
+		# xscrollbar = tk.Scrollbar(window, orient="horizontal")
+		# xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
+
+		# yscrollbar = tk.Scrollbar(window)
+		# yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
+
+		# canvas = tk.Canvas(window, bd=0,
+	 #                xscrollcommand=xscrollbar.set,
+	 #                yscrollcommand=yscrollbar.set)
+
+		# canvas.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
+
+		# xscrollbar.config(command=canvas.xview)
+		# yscrollbar.config(command=canvas.yview)
+		# frame = tk.Frame(canvas, width=1000,height=2000)
+		# canvas.create_window((0,0), window=frame, anchor='nw')
+		
+		# Calling object.
 		self.parent = parent
-		self.filename = self.parent.nb.tab(self.parent.nb.select(), "text")
-		self.dataset = self.parent.file_handler.data[self.filename]
-		window = tk.Toplevel(self.parent.root)
+		# New Window for feature.
+		self.window = tk.Toplevel(self.parent.root)
+		# Name of the NC file
+		self.nc_filename = self.parent.nb.tab(self.parent.nb.select(), "text")
+		# Dataset associated with this file.
+		self.dataset = self.parent.file_handler.data[self.nc_filename]
+		# All possible time values for this dataset. TODO Replace 'time' by a more general way of doing this.
 		self.time_range = [str(pd.to_datetime(a).date()) for a in list(self.dataset.variables['time'].values)]
-		tk.Label(window, text = "Time range: ").grid(row = 0, column = 0)
-		self.varSpin = tk.StringVar(window)
-		self.varSpin_o = tk.StringVar(window)
-		tk.Spinbox(window, values = self.time_range, textvariable = self.varSpin).grid(row = 0, column = 1)
-		tk.Spinbox(window, values = self.time_range, textvariable = self.varSpin_o).grid(row = 0, column = 2)
-		tk.Label(window, text = "Select time interval for x axis: ").grid(row = 1, column = 0)
-		self.varSpin1 = tk.StringVar(window)
-		self.varSpin2 = tk.StringVar(window)
-		self.spbox = tk.Spinbox(window, textvariable = self.varSpin1)
-		self.spbox.grid(row = 1, column = 1)
-		ttk.Combobox(window, textvariable = self.varSpin2, values = ["years", "months", "days"]).grid(row = 1, column = 2)
-		tk.Label(window, text = "Select filters:").grid(row = 25, column = 0)
-		self.val_filt = tk.IntVar(window)
-		tk.Radiobutton(window, variable = self.val_filt, value = 0, text = "No filters").grid(row = 26, column = 0)
-		tk.Radiobutton(window, variable = self.val_filt, value = 1, text = "Lat-Lon bounds").grid(row = 26, column = 1)
-		tk.Radiobutton(window, variable = self.val_filt, value = 2, text = "ShapeFile").grid(row = 26, column = 2)
-
-		self.varSpin2.trace("w", self.fillValues)
-		
-		lon_var,lat_var = None, None
-		for a in list(self.parent.file_handler.data[self.filename].dims):
-			if (a.lower().startswith("lon")):
-				lon_var = a
-			if (a.lower().startswith("lat")):
-				lat_var = a
-		
-		lat_arr = list(self.dataset.variables[lat_var].values)
-		self.lat_arr2 = [str(a) for a in lat_arr]
-		lat_arr.sort()
-		lon_arr = list(self.dataset.variables[lon_var].values)
-		self.lon_arr2 = [str(a) for a in lon_arr]
-		lon_arr.sort()
-		self.lbl1 = tk.Label(window, text = "Latitude Range:")
-		self.spn_box1 = tk.Spinbox(window, values = lat_arr)
-		self.spn_box2 = tk.Spinbox(window, values = lat_arr)
-		self.lbl2 = tk.Label(window, text = "Longitude Range:")
-		self.spn_box3 = tk.Spinbox(window, values = lon_arr)
-		self.spn_box4 = tk.Spinbox(window, values = lon_arr)
-		self.filename = None
-		self.lbl3 = tk.Label(window)
-		self.lbl4 = tk.Label(window, text = "Select place:")
-		self.plc_var = tk.StringVar(window)
-		self.cmb1 = ttk.Combobox(window, textvariable = self.plc_var)
-		self.places = None
-
-		self.val_filt.trace("w", self.selectFilter)
-
-		tk.Label(window, text = "Select variables:" ).grid(row = 20,column = 0)
-		self.var_var = dict()
+		# Creating the section for selecting variables.
+		tk.Label(self.window, text = "Select variables:" ).grid(row = 20,column = 0)
+		self.var_selectVars = dict()
 		num = 0
-		for x in list(self.dataset.data_vars.keys()):
-			self.var_var[x] = tk.IntVar(window)
-			tk.Checkbutton(window, text = x, variable = self.var_var[x]).grid(row = 21, column = num)
+		for variable in list(self.dataset.data_vars.keys()):
+			self.var_selectVars[variable] = tk.IntVar(self.window)
+			tk.Checkbutton(self.window, text = variable, variable = self.var_selectVars[variable]).grid(row = 21, column = num)
 			num += 1
-		b1 = tk.Button(window, text = "Plot")
+		# Creating section for selecting the type of filter.
+		tk.Label(self.window, text = "Select filters:").grid(row = 25, column = 0)
+		self.var_filterType = tk.IntVar(self.window)
+		tk.Radiobutton(self.window, variable = self.var_filterType, value = 0, text = "No filters").grid(row = 26, column = 0)
+		tk.Radiobutton(self.window, variable = self.var_filterType, value = 1, text = "Lat-Lon bounds").grid(row = 26, column = 1)
+		tk.Radiobutton(self.window, variable = self.var_filterType, value = 2, text = "ShapeFile").grid(row = 26, column = 2)
+		# Creating widgets for these options.
+		lon_var,lat_var = self.file_handler.getLatLon(self.parent.file_handler.data[self.nc_filename])
+		self.list_lat = [str(a) for a in list(self.dataset.variables[lat_var].values)]
+		self.list_lat.sort()
+		self.list_lon = [str(a) for a in list(self.dataset.variables[lon_var].values)]
+		self.list_lon.sort()
+		self.l_latRange = tk.Label(self.window, text = "Latitude Range:")
+		self.spn_latLow = tk.Spinbox(self.window, values = self.list_lat)
+		self.spn_latHigh = tk.Spinbox(self.window, values = self.list_lat)
+		self.l_lonRange = tk.Label(self.window, text = "Longitude Range:")
+		self.spn_lonLow = tk.Spinbox(self.window, values = self.list_lon)
+		self.spn_lonHigh = tk.Spinbox(self.window, values = self.list_lon)
+		self.shp_file = None
+		self.l_shapeFileName = tk.Label(self.window)
+		self.l_location = tk.Label(self.window, text = "Select place:")
+		self.var_location = tk.StringVar(self.window)
+		self.cmb_location = ttk.Combobox(self.window, textvariable = self.var_location)
+		self.list_places = None
+
+		self.var_filterType.trace("w", self.selectFilter)
+
+
+	def selectFilter(self,event, b, c):
+		if (self.var_filterType.get() == 0):
+			# Option No Filters
+			# Hide all filter related components.
+			self.l_latRange.grid_forget()
+			self.spn_latLow.grid_forget()
+			self.spn_latHigh.grid_forget()
+			self.l_lonRange.grid_forget()
+			self.spn_lonLow.grid_forget()
+			self.spn_lonHigh.grid_forget()
+			self.l_shapeFileName.grid_forget()
+			self.l_location.grid_forget()
+			self.cmb_location.grid_forget()
+			self.shp_file = None
+
+		elif (self.var_filterType.get() == 1):
+			# Option LatLon Constraints
+			# Display LatLon selectors.
+			self.l_latRange.grid(row = 27, column = 0)
+			self.spn_latLow.grid(row = 27, column = 1)
+			self.spn_latHigh.grid(row = 27, column = 2)
+			self.l_lonRange.grid(row = 28, column = 0)
+			self.spn_lonLow.grid(row = 28, column = 1)
+			self.spn_lonHigh.grid(row = 28, column = 2)
+			# Hide Shapefile selectors.
+			self.l_shapeFileName.grid_forget()
+			self.l_location.grid_forget()
+			self.cmb_location.grid_forget()
+			self.shp_file = None
+
+		elif(self.var_filterType.get() == 2):
+			# Option ShapeFile filter
+			# Hide LatLon selectors.
+			self.l_latRange.grid_forget()
+			self.spn_latLow.grid_forget()
+			self.spn_latHigh.grid_forget()
+			self.l_lonRange.grid_forget()
+			self.spn_lonLow.grid_forget()
+			self.spn_lonHigh.grid_forget()
+			# Prompt for file selection.
+			shp_filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
+			if (shp_filename == ""):
+				self.var_filterType.set(0)
+			else:
+				self.shp_file,self.list_places = self.parent.file_handler.openShapeFile(shp_filename)
+				places = [i for i in self.list_places if i is not None]
+				places.append("ALL")
+				places.sort()
+				# Display ShapeFile selectors.
+				self.l_shapeFileName.config(text=shp_filename.split('/')[-1])
+				self.l_shapeFileName.grid(row = 27, column = 0)
+				self.l_location.grid(row = 28, column = 0)
+				self.cmb_location.config(values = places)
+				self.cmb_location.grid(row = 28, column = 1)
+
+class PlotGenerator(CalculatorWindow):
+	def __init__(self, parent):
+		super().__init__(parent)
+		tk.Label(self.window, text = "Time range: ").grid(row = 0, column = 0)
+		self.varSpin = tk.StringVar(self.window)
+		self.varSpin_o = tk.StringVar(self.window)
+		tk.Spinbox(self.window, values = self.time_range, textvariable = self.varSpin).grid(row = 0, column = 1)
+		tk.Spinbox(self.window, values = self.time_range, textvariable = self.varSpin_o).grid(row = 0, column = 2)
+		tk.Label(self.window, text = "Select time interval for x axis: ").grid(row = 1, column = 0)
+		self.varSpin1 = tk.StringVar(self.window)
+		self.varSpin2 = tk.StringVar(self.window)
+		self.spbox = tk.Spinbox(self.window, textvariable = self.varSpin1)
+		self.spbox.grid(row = 1, column = 1)
+		ttk.Combobox(self.window, textvariable = self.varSpin2, values = ["years", "months", "days"]).grid(row = 1, column = 2)
+		self.varSpin2.trace("w", self.fillValues)
+		b1 = tk.Button(self.window, text = "Plot")
 		b1.grid(row = 100, column = 1)
 		b1.config(command = self.dataPlot)
 
@@ -90,21 +166,21 @@ class PlotGenerator(object):
 		start_time_index = self.time_range.index(self.varSpin.get())
 		end_time_index = self.time_range.index(self.varSpin_o.get())
 		time_interval = (int(self.varSpin1.get()), self.varSpin2.get())
-		variables = [(key,self.dataset.variables[key].attrs['units']) for key,value in self.var_var.items() if value.get() == 1]
-		if (self.val_filt.get() == 0):
+		variables = [(key,self.dataset.variables[key].attrs['units']) for key,value in self.var_selectVars.items() if value.get() == 1]
+		if (self.var_filterType.get() == 0):
 			output_mean, output_std, time_array = self.parent.file_handler.plotData(self.dataset, start_time_index, end_time_index, time_interval, variables)
-		elif(self.val_filt.get() == 1):
-			lat_r = [self.lat_arr2.index(self.spn_box1.get()),self.lat_arr2.index(self.spn_box2.get())]
-			lon_r = [self.lon_arr2.index(self.spn_box3.get()),self.lon_arr2.index(self.spn_box4.get())]
+		elif(self.var_filterType.get() == 1):
+			lat_r = [self.list_lat.index(self.spn_latLow.get()),self.list_lat.index(self.spn_latHigh.get())]
+			lon_r = [self.list_lon.index(self.spn_lonLow.get()),self.list_lon.index(self.spn_lonHigh.get())]
 			lat_r.sort()
 			lon_r.sort()
 			output_mean, output_std, time_array = self.parent.file_handler.plotData(self.dataset, start_time_index, end_time_index, time_interval, variables, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
-		elif(self.val_filt.get() == 2):
-			if(self.plc_var.get() == "ALL"):
+		elif(self.var_filterType.get() == 2):
+			if(self.var_location.get() == "ALL"):
 				plac_ind = None
 			else:
-				plac_ind = self.places.index(self.plc_var.get())
-			output_mean, output_std, time_array = self.parent.file_handler.plotData(self.dataset, start_time_index, end_time_index, time_interval, variables, filt = "shapefile", filename = self.filename, place = plac_ind)
+				plac_ind = self.list_places.index(self.var_location.get())
+			output_mean, output_std, time_array = self.parent.file_handler.plotData(self.dataset, start_time_index, end_time_index, time_interval, variables, filt = "shapefile", filename = self.shp_file, place = plac_ind)
 		plotLines(output_mean, output_std, time_array, variables)
 
 	def fillValues(self, event, b, c):
@@ -117,157 +193,46 @@ class PlotGenerator(object):
 			arr = [a for a in range(1,32)]
 		self.spbox.config(values = arr)
 	
-	def selectFilter(self,event, b, c):
-		if (self.val_filt.get() == 0):
-			self.lbl1.grid_forget()
-			self.spn_box1.grid_forget()
-			self.spn_box2.grid_forget()
-			self.lbl2.grid_forget()
-			self.spn_box3.grid_forget()
-			self.spn_box4.grid_forget()
-			self.lbl3.grid_forget()
-			self.lbl4.grid_forget()
-			self.cmb1.grid_forget()
-			self.filename = None
 
-		elif (self.val_filt.get() == 1):
-			self.lbl1.grid(row = 27, column = 0)
-			self.spn_box1.grid(row = 27, column = 1)
-			self.spn_box2.grid(row = 27, column = 2)
-			self.lbl2.grid(row = 28, column = 0)
-			self.spn_box3.grid(row = 28, column = 1)
-			self.spn_box4.grid(row = 28, column = 2)
-			self.lbl3.grid_forget()
-			self.lbl4.grid_forget()
-			self.cmb1.grid_forget()
-			self.filename = None
-
-		elif(self.val_filt.get() == 2):
-			self.lbl1.grid_forget()
-			self.spn_box1.grid_forget()
-			self.spn_box2.grid_forget()
-			self.lbl2.grid_forget()
-			self.spn_box3.grid_forget()
-			self.spn_box4.grid_forget()
-			self.filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
-			if (self.filename == ""):
-				self.filename = None
-				self.val_filt.set(0)
-			else:
-				shp = gpd.read_file(self.filename)
-				#print(list(shp.columns))
-				# Searching in this above list and selecting the name variable seems like a good idea.
-				try:
-					self.places = list(shp['NAME'])
-				except:
-					self.places = list(shp['ST_NAME'])
-				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
-				#[Need to modify the selector to allow multiple places to be selected.]
-				places2 = [i for i in self.places if i is not None]
-				places2.append("ALL")
-				places2.sort()
-				self.lbl3.config(text=self.filename.split('/')[-1])
-				self.lbl3.grid(row = 27, column = 0)
-				self.lbl4.grid(row = 28, column = 0)
-				self.cmb1.config(values = places2)
-				self.cmb1.grid(row = 28, column = 1)
-
-class DataSelector(object):
-
+class DataSelector(CalculatorWindow):
 	
 	def __init__(self,parent):
-		self.parent = parent
-		window = tk.Toplevel(self.parent.root)
+		super().__init__(parent)
 
-		window.grid_rowconfigure(0, weight=1)
-		window.grid_columnconfigure(0, weight=1)
-
-		xscrollbar = tk.Scrollbar(window, orient="horizontal")
-		xscrollbar.grid(row=1, column=0, sticky=tk.E+tk.W)
-
-		yscrollbar = tk.Scrollbar(window)
-		yscrollbar.grid(row=0, column=1, sticky=tk.N+tk.S)
-
-		canvas = tk.Canvas(window, bd=0,
-	                xscrollcommand=xscrollbar.set,
-	                yscrollcommand=yscrollbar.set)
-
-		canvas.grid(row=0, column=0, sticky=tk.N+tk.S+tk.E+tk.W)
-
-		xscrollbar.config(command=canvas.xview)
-		yscrollbar.config(command=canvas.yview)
-		frame = tk.Frame(canvas, width=1000,height=2000)
-		canvas.create_window((0,0), window=frame, anchor='nw')
-
-		self.var_time = tk.IntVar(frame)
-		self.filename = self.parent.nb.tab(self.parent.nb.select(), "text")
-		self.dataset = self.parent.file_handler.data[self.filename]
-		tk.Label(frame, text = "Select data points by: ").grid(row = 0,column = 0)
-		tk.Radiobutton(frame, variable = self.var_time, value = 0, text = "Year").grid(row = 0, column = 1)
-		tk.Radiobutton(frame, variable = self.var_time, value = 1, text = "Month").grid(row = 0, column = 2)
+		self.var_time = tk.IntVar(self.window)
+		tk.Label(self.window, text = "Select data points by: ").grid(row = 0,column = 0)
+		tk.Radiobutton(self.window, variable = self.var_time, value = 0, text = "Year").grid(row = 0, column = 1)
+		tk.Radiobutton(self.window, variable = self.var_time, value = 1, text = "Month").grid(row = 0, column = 2)
 		time_range = [pd.to_datetime(a).date() for a in list(self.dataset.variables['time'].values)]
 		time_range.sort()
-		tk.Label(frame, text = "Select filters:").grid(row = 625, column = 0)
-		self.val_filt = tk.IntVar(frame)
-		tk.Radiobutton(frame, variable = self.val_filt, value = 0, text = "No filters").grid(row = 626, column = 0)
-		tk.Radiobutton(frame, variable = self.val_filt, value = 1, text = "Lat-Lon bounds").grid(row = 626, column = 1)
-		tk.Radiobutton(frame, variable = self.val_filt, value = 2, text = "ShapeFile").grid(row = 626, column = 2)
-		tk.Label(frame, text = "Select variables:" ).grid(row = 820,column = 0)
-		self.var_var = dict()
-		num = 0
-		for x in list(self.dataset.data_vars.keys()):
-			self.var_var[x] = tk.BooleanVar(frame)
-			tk.Checkbutton(frame, text = x, variable = self.var_var[x]).grid(row = 821, column = num)
-			num += 1
 		self.chk = []
 		self.var_rad = None
 		self.year_start, self.year_end = None, None
-		tk.Label(frame, text = "Statistics").grid(row = 900, column = 0)
-		self.outField = tk.Text(frame, height = 4, width = 5)
+		tk.Label(self.window, text = "Statistics").grid(row = 900, column = 0)
+		self.outField = tk.Text(self.window, height = 4, width = 5)
 		self.outField.grid(row = 900, column = 1, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
 		self.months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-		self.var_month = [tk.BooleanVar(frame, name = "all"+"_"+ mon) for mon in self.months]
-		self.month_label = [tk.Checkbutton(frame, text = self.months[d], variable = self.var_month[d]) for d in range(len(self.months))]
+		self.var_month = [tk.BooleanVar(self.window, name = "all"+"_"+ mon) for mon in self.months]
+		self.month_label = [tk.Checkbutton(self.window, text = self.months[d], variable = self.var_month[d]) for d in range(len(self.months))]
 		self.year_start = int(time_range[0].year)
 		self.year_end = int(time_range[-1].year)
-		self.var_year = [tk.BooleanVar(frame, name = str(d)+ "_all") for d in range(self.year_start,self.year_end+1)]
-		self.year_labels = [tk.Checkbutton(frame, text = str(ind+self.year_start), variable = self.var_year[ind]) for ind in range(self.year_end-self.year_start+1)]
-		self.var_rad = [tk.BooleanVar(frame) for ind in range(self.year_end-self.year_start+1)]
-		self.chk = [tk.Checkbutton(frame, text = str(ind+self.year_start), variable =  self.var_rad[ind]) for ind in range(self.year_end-self.year_start+1)]
+		self.var_year = [tk.BooleanVar(self.window, name = str(d)+ "_all") for d in range(self.year_start,self.year_end+1)]
+		self.year_labels = [tk.Checkbutton(self.window, text = str(ind+self.year_start), variable = self.var_year[ind]) for ind in range(self.year_end-self.year_start+1)]
+		self.var_rad = [tk.BooleanVar(self.window) for ind in range(self.year_end-self.year_start+1)]
+		self.chk = [tk.Checkbutton(self.window, text = str(ind+self.year_start), variable =  self.var_rad[ind]) for ind in range(self.year_end-self.year_start+1)]
 		self.chk2 = dict()
 		for dra in range(self.year_start,self.year_end+1):
 			self.chk2[str(dra)] = dict()
 			for mon in self.months:
-				self.chk2[str(dra)][mon] = [tk.BooleanVar(frame, name = str(dra)+"_"+mon)]
-				self.chk2[str(dra)][mon].append(tk.Checkbutton(frame, variable =  self.chk2[str(dra)][mon][0]))
-		lon_var,lat_var = self.parent.file_handler.getLatLon(self.dataset)
-		lat_arr = list(self.dataset.variables[lat_var].values)
-		self.lat_arr2 = [str(a) for a in lat_arr]
-		lat_arr.sort()
-		lon_arr = list(self.dataset.variables[lon_var].values)
-		self.lon_arr2 = [str(a) for a in lon_arr]
-		lon_arr.sort()
-		self.lbl1 = tk.Label(frame, text = "Latitude Range:")
-		self.spn_box1 = tk.Spinbox(frame, values = lat_arr)
-		self.spn_box2 = tk.Spinbox(frame, values = lat_arr)
-		self.lbl2 = tk.Label(frame, text = "Longitude Range:")
-		self.spn_box3 = tk.Spinbox(frame, values = lon_arr)
-		self.spn_box4 = tk.Spinbox(frame, values = lon_arr)
-		self.filename = None
-		self.lbl3 = tk.Label(frame)
-		self.lbl4 = tk.Label(frame, text = "Select place:")
-		self.plc_var = tk.StringVar(frame)
-		self.cmb1 = ttk.Combobox(frame, textvariable = self.plc_var)
-		self.places = None
-
-		self.val_filt.trace("w", self.selectFilter)
+				self.chk2[str(dra)][mon] = [tk.BooleanVar(self.window, name = str(dra)+"_"+mon)]
+				self.chk2[str(dra)][mon].append(tk.Checkbutton(self.window, variable =  self.chk2[str(dra)][mon][0]))
 		
 		self.var_time.trace("w", self.selectGrid)
 		self.var_time.set(0)
 
-		b1 = tk.Button(frame, command = self.getStats, text = "Get statistics")
+		b1 = tk.Button(self.window, command = self.getStats, text = "Get statistics")
 		b1.grid(row = 1000, column = 0)
-		canvas.config(scrollregion = (0,0,2000,2000))
+		# canvas.config(scrollregion = (0,0,2000,2000))
 
 		for a in self.var_month:
 			a.trace("w", self.select)
@@ -276,8 +241,8 @@ class DataSelector(object):
 
 	def getStats(self):
 
-		var_arr = [key for key,value in self.var_var.items() if value.get()]
-		filt = self.val_filt.get()
+		var_arr = [key for key,value in self.var_selectVars.items() if value.get()]
+		filt = self.var_filterType.get()
 		if(not self.var_time.get()):
 			chk_status = [a.get() for a in self.var_rad]
 			year_param = self.year_start
@@ -288,20 +253,20 @@ class DataSelector(object):
 				for mon in self.months:
 					chk_status[str(dra)][mon] = self.chk2[str(dra)][mon][0].get()
 			year_param = None
-		if(self.val_filt.get() == 0):
+		if(self.var_filterType.get() == 0):
 			outdict = self.parent.file_handler.getStats(self.dataset, year_param, chk_status, var_arr)
-		elif(self.val_filt.get() == 1):
-			lat_r = [self.lat_arr2.index(self.spn_box1.get()),self.lat_arr2.index(self.spn_box2.get())]
-			lon_r = [self.lon_arr2.index(self.spn_box3.get()),self.lon_arr2.index(self.spn_box4.get())]
+		elif(self.var_filterType.get() == 1):
+			lat_r = [self.list_lat.index(self.spn_latLow.get()),self.list_lat.index(self.spn_latHigh.get())]
+			lon_r = [self.list_lon.index(self.spn_lonLow.get()),self.list_lon.index(self.spn_lonHigh.get())]
 			lat_r.sort()
 			lon_r.sort()
 			outdict = self.parent.file_handler.getStats(self.dataset, year_param, chk_status, var_arr, filt = "bounds", lat_range = slice(lat_r[0], lat_r[1]), lon_range = slice(lon_r[0], lon_r[1]))
-		elif(self.val_filt.get() == 2):
-			if(self.plc_var.get() == "ALL"):
+		elif(self.var_filterType.get() == 2):
+			if(self.var_location.get() == "ALL"):
 				plac_ind = None
 			else:
-				plac_ind = self.places.index(self.plc_var.get())
-			outdict = self.parent.file_handler.getStats(self.dataset, year_param, chk_status, var_arr, filt = "shapefile", filename = self.filename, place = plac_ind)
+				plac_ind = self.list_places.index(self.var_location.get())
+			outdict = self.parent.file_handler.getStats(self.dataset, year_param, chk_status, var_arr, filt = "shapefile", filename = self.shp_file, place = plac_ind)
 		self.outField.delete(1.0,tk.END)
 		self.outField.insert(tk.INSERT, self.parent.file_handler.generateMessage(outdict))
 
@@ -315,60 +280,6 @@ class DataSelector(object):
 		elif (mon == "all"):
 			for mon in self.months:
 				self.chk2[year][mon][0].set(self.var_year[int(year)-self.year_start].get())
-
-	def selectFilter(self,event, b, c):
-		if (self.val_filt.get() == 0):
-			self.lbl1.grid_forget()
-			self.spn_box1.grid_forget()
-			self.spn_box2.grid_forget()
-			self.lbl2.grid_forget()
-			self.spn_box3.grid_forget()
-			self.spn_box4.grid_forget()
-			self.lbl3.grid_forget()
-			self.lbl4.grid_forget()
-			self.cmb1.grid_forget()
-			self.filename = None
-
-		elif (self.val_filt.get() == 1):
-			self.lbl1.grid(row = 727, column = 0)
-			self.spn_box1.grid(row = 727, column = 1)
-			self.spn_box2.grid(row = 727, column = 2)
-			self.lbl2.grid(row = 728, column = 0)
-			self.spn_box3.grid(row = 728, column = 1)
-			self.spn_box4.grid(row = 728, column = 2)
-			self.lbl3.grid_forget()
-			self.lbl4.grid_forget()
-			self.cmb1.grid_forget()
-			self.filename = None
-		elif(self.val_filt.get() == 2):
-			self.lbl1.grid_forget()
-			self.spn_box1.grid_forget()
-			self.spn_box2.grid_forget()
-			self.lbl2.grid_forget()
-			self.spn_box3.grid_forget()
-			self.spn_box4.grid_forget()
-			self.filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
-			if (self.filename == ""):
-				self.filename = None
-				self.val_filt.set(0)
-			else:
-				shp = gpd.read_file(self.filename)
-				#print(list(shp.columns))
-				# Searching in this above list and selecting the name variable seems like a good idea.
-				try:
-					self.places = list(shp['NAME'])
-				except:
-					self.places = list(shp['ST_NAME'])
-				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
-				#[Need to modify the selector to allow multiple places to be selected.]
-				places2 = [i for i in self.places if i is not None]
-				places2.append("ALL")
-				places2.sort()
-				self.lbl3.config(text=self.filename.split('/')[-1])
-				self.lbl3.grid(row = 727, column = 0)
-				self.lbl4.grid(row = 728, column = 0)
-				self.cmb1.config(values = places2)
-				self.cmb1.grid(row = 728, column = 1)
 	
 	def selectGrid(self,event, b, c):
 		if(self.var_time.get() == 0):
@@ -392,7 +303,6 @@ class DataSelector(object):
 			for i in range(0,self.year_end-self.year_start+1):
 				for m in range(12):
 					self.chk2[str(i+self.year_start)][self.months[m]][1].grid(row = 2+i, column = m+1)
-
 
 class FirstGUI(object):
 
@@ -425,13 +335,13 @@ class FirstGUI(object):
 		self.text = tk.Entry(self.parent.root, textvariable = self.newName)
 		self.text.grid(row = i, column = 2, pady = 8, columnspan = 3, sticky = tk.W)
 		
-		self.b1 = tk.Button(self.parent.root, text = 'Combine')
-		self.b1.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
+		self.b_confirm = tk.Button(self.parent.root, text = 'Combine')
+		self.b_confirm.grid(row = i+1, column = 0, sticky = tk.W+tk.E)
 		
 		self.b2 = tk.Button(self.parent.root, text = 'Done')
 		self.b2.grid(row = i+1, column = 4, sticky = tk.W+tk.E)
 
-		self.b1.config(command = self.combine_files)
+		self.b_confirm.config(command = self.combine_files)
 		self.b2.config(command = self.createGUI)
 		
 		self.parent.root.grid_columnconfigure(0, minsize=150)
@@ -455,32 +365,78 @@ class FirstGUI(object):
 		
 		self.l1.destroy()
 		self.l2.destroy()
-		self.b1.destroy()
+		self.b_confirm.destroy()
 		self.b2.destroy()
 		self.text.destroy()
 		for btn in self.chk_btn_dict.values():
 			btn.destroy()
 
-class MapPlots(object):
+class FeatureWindow(object):
 	def __init__(self,parent):
+		# Parent calling object.
 		self.parent = parent
-		self.filename = self.parent.nb.tab(self.parent.nb.select(), "text")
-		self.dataset = self.parent.file_handler.data[self.filename]
+		# The filename that is being called. 
+		self.nc_filename = self.parent.nb.tab(self.parent.nb.select(), "text")
+		# The dataset corresponding to this file. 
+		self.dataset = self.parent.file_handler.data[self.nc_filename]
+		# Retrieving the Longitude and Latitude variables.
 		self.lon_var, self.lat_var = self.parent.file_handler.getLatLon(self.dataset)
+		# Top level window
 		self.window = tk.Toplevel(self.parent.root)
-		self.var2 = tk.IntVar(self.window) # shape file toggle
-		var_list = list(self.parent.file_handler.data[self.filename].data_vars.keys())
-		self.time_range = [str(pd.to_datetime(a).date()) for a in list(self.parent.file_handler.data[self.filename].variables['time'].values)]
-		self.b1 = tk.Button(self.window, text = 'Confirm')
-		self.b1.grid(row = 90, column = 1)
-		self.var3 = tk.StringVar(self.window) #shapefile location selector
-		self.var3.set("ALL")
-		self.filename = None
+		# List of variables associated with this dataset
+		self.list_var = list(self.parent.file_handler.data[self.nc_filename].data_vars.keys())
+		# Possible values of time.  TODO: This is hardcoded. Should be changed
+		self.time_range = [str(pd.to_datetime(a).date()) for a in list(self.parent.file_handler.data[self.nc_filename].variables['time'].values)]
+		# Shape file toggle variable.
+		self.shapeFileToggle = tk.IntVar(self.window)
+		self.shapeFileToggle.trace("w", self.shapeSelect)
+		# Button to confirm the values.
+		self.b_confirm = tk.Button(self.window, text = 'Confirm')
+		self.b_confirm.grid(row = 90, column = 1)
+		# Variable to store location
+		self.var_location = tk.StringVar(self.window)
+		self.var_location.set("ALL")
+		# Variable to store shape filename
+		self.shp_file = None
+		# Variable to store the index of the location.
 		self.plac_ind = None
-		self.places = []
-		self.combo1 = ttk.Combobox(self.window, textvariable = self.var3)
-		self.la1 = tk.Label(self.window)
-		self.la2 = tk.Label(self.window, text= "Select place:")
+		# Combobox for location
+		self.cmb_location = ttk.Combobox(self.window, textvariable = self.var_location)
+		# Label for shapefile name
+		self.l_shapeFile_name = tk.Label(self.window)
+		# Label for associated text
+		self.l_select_place = tk.Label(self.window, text= "Select place:")
+
+	def shapeSelect(self, event, b, c):
+		if (self.shapeFileToggle.get() == 1):
+			shp_filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
+			if (shp_filename == ""): #if window is closed without selecting file.
+				self.shapeFileToggle.set(0)
+			else:
+				self.shp_file,self.places = self.parent.file_handler.openShapeFile(shp_filename)
+				places = [i for i in self.places if i is not None]
+				places.append("ALL")
+				places.sort()
+				# Configure and display the shapeFile label
+				self.l_shapeFile_name.config(text=shp_filename.split('/')[-1])
+				self.l_shapeFile_name.grid(row = 24, column = 0)
+				# Display the label
+				self.l_select_place.grid(row = 25, column = 0)
+				# Configure and display the location combobox.
+				self.cmb_location.config(values = places)
+				self.cmb_location.grid(row = 25, column = 1)
+		elif(self.shapeFileToggle.get() == 0):
+			# Resetting variables
+			self.shp_file = None
+			self.plac_ind = None
+			# Hiding the shapefile related widgets.
+			self.cmb_location.grid_forget()
+			self.l_shapeFile_name.grid_forget()
+			self.l_select_place.grid_forget()
+
+class MapPlots(FeatureWindow):
+	def __init__(self,parent):
+		super().__init__(parent)
 		self.var = tk.StringVar(self.window) # variable selector
 		self.varn = tk.StringVar(self.window) # projection selector
 		self.varSpin1= tk.StringVar(self.window) #time range1
@@ -489,7 +445,7 @@ class MapPlots(object):
 		self.varShow = tk.BooleanVar(self.window) # show plot checkbutton
 		self.varSaveName = tk.StringVar(self.window) # newfile name
 		self.varFrameRate = tk.StringVar(self.window)
-		self.var.set(var_list[0])
+		self.var.set(self.list_var[0])
 		self.varn.set("PlateCarree")
 		self.varFrameRate.set("150")
 		tk.Label(self.window, text = "Select type graph:").grid(row = 1, column = 0)
@@ -499,8 +455,6 @@ class MapPlots(object):
 		tk.Radiobutton(self.window, text = 'Vector plot (if available)', variable = self.varRadio, value = 2).grid(row = 4, column = 0)
 		tk.Radiobutton(self.window, text = 'Animated vector plot', variable = self.varRadio, value = 3).grid(row = 5, column = 0)
 
-		proj_list = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertConformal","LambertCylindrical","Mercator","Miller","Mollweide","Orthographic","Robinson","Sinusoidal","Stereographic","TransverseMercator","UTM","InterruptedGoodeHomolosine","RotatedPole","OSGB","EuroPP","Geostationary","NearsidePerspective","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","Gnomonic","LambertAzimuthalEqualArea","NorthPolarStereo","OSNI","SouthPolarStereo"]
-		proj_list_reduced = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertCylindrical","Miller","Mollweide","Robinson","Sinusoidal","InterruptedGoodeHomolosine","RotatedPole","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","NorthPolarStereo","SouthPolarStereo"]
 		self.l1 = tk.Label(self.window, text = "Select variable: ")
 		self.l2 = tk.Label(self.window, text = "Select time: ")
 		self.l3 = tk.Label(self.window, text = "Select projection: ")
@@ -508,11 +462,11 @@ class MapPlots(object):
 		self.l5 = tk.Label(self.window, text = ".gif")
 		self.l6 = tk.Label(self.window, text = "Frame rate")
 		self.l7 = tk.Label(self.window, text = "microseconds")
-		self.om1 = tk.OptionMenu(self.window, self.var, *var_list)
+		self.om1 = tk.OptionMenu(self.window, self.var, *self.list_var)
 		self.sb1 = tk.Spinbox(self.window, values = self.time_range, textvariable = self.varSpin1)
 		self.sb2 = tk.Spinbox(self.window, values = self.time_range, textvariable = self.varSpin2)
-		self.cb1 = ttk.Combobox(self.window, textvariable = self.varn, values = proj_list)
-		self.chb1 = tk.Checkbutton(self.window, text = "Use SHP file", variable = self.var2)
+		self.cb1 = ttk.Combobox(self.window, textvariable = self.varn, values = list(proj_dict.keys()))
+		self.chb1 = tk.Checkbutton(self.window, text = "Use SHP file", variable = self.shapeFileToggle)
 		self.chb2 = tk.Checkbutton(self.window, text = "Savefile as", variable = self.varSave)
 		self.chb3 = tk.Checkbutton(self.window, text = "Display plot", variable = self.varShow)
 
@@ -521,7 +475,6 @@ class MapPlots(object):
 		
 		self.varRadio.trace("w", self.plotSelect)
 		self.varRadio.set(0)
-		self.var2.trace("w", self.shapeSelect)
 
 	def plotSelect(self,event, a, b):
 		var_t = self.varRadio.get()
@@ -569,6 +522,7 @@ class MapPlots(object):
 			self.sb1.grid(row = 12, column = 1)
 			self.sb2.grid_forget()
 			self.l3.grid(row = 13, column = 0)
+			proj_list_reduced = ["PlateCarree","AlbersEqualArea","AzimuthalEquidistant","EquidistantConic","LambertCylindrical","Miller","Mollweide","Robinson","Sinusoidal","InterruptedGoodeHomolosine","RotatedPole","EckertI","EckertII","EckertIII","EckertIV","EckertV","EckertVI","EqualEarth","NorthPolarStereo","SouthPolarStereo"]
 			self.cb1.config(values = proj_list_reduced)
 			self.cb1.grid(row = 13, column = 1)
 			self.l4.grid_forget()
@@ -601,10 +555,10 @@ class MapPlots(object):
 			self.varShow.set(1)
 			self.varSaveName.set('default')
 			# More option wrt animation to be added here.
-		self.b1.config(command = self.callPlotFunction)
+		self.b_confirm.config(command = self.callPlotFunction)
 					
 	def callPlotFunction(self):
-		plot_maps = PlotMaps()
+		self.plot_maps = PlotMaps()
 		var_name = self.var.get()
 		proj_string = self.varn.get()
 		t1 = self.time_range.index(self.varSpin1.get())
@@ -613,27 +567,27 @@ class MapPlots(object):
 		save = self.varSave.get()
 		save_name = self.varSaveName.get()
 		frameRate = int(self.varFrameRate.get())
-		if(self.var2.get() == 1 and self.var3.get() != "ALL"):
-			self.plac_ind = self.places.index(self.var3.get())
-		elif(self.var3.get() == "ALL"):
+		if(self.shapeFileToggle.get() == 1 and self.var_location.get() != "ALL"):
+			self.plac_ind = self.places.index(self.var_location.get())
+		elif(self.var_location.get() == "ALL"):
 			self.plac_ind = None
 		self.org = self.varRadio.get()
 		if (self.org == 0):
-			xds, geometries = self.parent.file_handler.getShapeData(self.dataset, var_name, t1, self.filename, self.plac_ind)
-			plot_maps.plotMapShape(proj_string, xds, self.lon_var, self.lat_var, geometries)
+			xds, geometries = self.parent.file_handler.getShapeData(self.dataset, var_name, t1, self.shp_file, self.plac_ind)
+			self.plot_maps.plotMapShape(proj_string, xds, self.lon_var, self.lat_var, geometries)
 		elif (self.org == 1):
-			plot_maps.animation(t2-t1, proj_string,show, save, save_name,self.lon_var,self.lat_var,frameRate, self.file_handler.animate_aux(self.dataset,var_name, t1, self.filename, self.plac_ind))
+			self.plot_maps.animation(t2-t1, proj_string,show, save, save_name,self.lon_var,self.lat_var,frameRate, self.file_handler.animate_aux(self.dataset,var_name, t1, self.shp_file, self.plac_ind))
 		elif (self.org == 2):
-			xds1, geometries = self.parent.file_handler.getShapeData(self.dataset, 'u10', t1, self.filename, self.plac_ind)
-			xds2, geometries = self.parent.file_handler.getShapeData(self.dataset, 'v10', t1, self.filename, self.plac_ind)
-			lon_arr = np.sort(((np.array(self.parent.file_handler.data[self.filename].coords[self.lon_var]) + 180) % 360) -180)
-			lat_arr = np.array(self.parent.file_handler.data[self.filename].coords[self.lat_var])
+			xds1, geometries = self.parent.file_handler.getShapeData(self.dataset, 'u10', t1, self.shp_file, self.plac_ind)
+			xds2, geometries = self.parent.file_handler.getShapeData(self.dataset, 'v10', t1, self.shp_file, self.plac_ind)
+			lon_arr = np.sort(((np.array(self.parent.file_handler.data[self.nc_filename].coords[self.lon_var]) + 180) % 360) -180)
+			lat_arr = np.array(self.parent.file_handler.data[self.nc_filename].coords[self.lat_var])
 			u_arr = np.array(xds1)
 			v_arr = np.array(xds2)
 			velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
-			plot_maps.vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity,self.varSpin1.get())
+			self.plot_maps.vectorMap(proj_string, lon_arr, lat_arr, u_arr, v_arr, velocity,self.varSpin1.get())
 		elif (self.org == 3):
-			getU,getV = self.parent.file_handler.animate_aux(self.dataset,'u10',t1,self.filename,self.plac_ind), self.parent.file_handler.animate_aux(self.dataset,'v10',t1,self.filename,self.plac_ind)
+			getU,getV = self.parent.file_handler.animate_aux(self.dataset,'u10',t1,self.shp_file,self.plac_ind), self.parent.file_handler.animate_aux(self.dataset,'v10',t1,self.shp_file,self.plac_ind)
 			xds1, geometries = getU(0)
 			xds2, geometries = getV(0)
 			lon_arr = np.sort(((np.array(self.dataset.coords[self.lon_var]) + 180) % 360) -180)
@@ -641,108 +595,27 @@ class MapPlots(object):
 			u_arr = np.array(xds1)
 			v_arr = np.array(xds2)
 			velocity = np.sqrt(u_arr*u_arr+v_arr*v_arr)
-			plot_maps.vectorAnim(t2-t1, proj_string,show, save, save_name, getU,getV, frameRate, lon_arr,lat_arr,u_arr, v_arr, velocity, self.time_range)
+			self.plot_maps.vectorAnim(t2-t1, proj_string,show, save, save_name, getU,getV, frameRate, lon_arr,lat_arr,u_arr, v_arr, velocity, self.time_range)
 
-	def shapeSelect(self, event, b, c):
-		if (self.var2.get() == 1 or self.org == 2):
-			self.filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
-			if (self.filename == ""):
-				self.filename = None
-				self.var2.set(0)
-			else:
-				shp = gpd.read_file(self.filename)
-				#print(list(shp.columns))
-				# Searching in this above list and selecting the name variable seems like a good idea.
-				try:
-					self.places = list(shp['NAME'])
-				except:
-					self.places = list(shp['ST_NAME'])
-				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
-				#[Need to modify the selector to allow multiple places to be selected.]
-				places2 = [i for i in self.places if i is not None]
-				places2.append("ALL")
-				self.la1.config(text=self.filename.split('/')[-1])
-				self.la1.grid(row = 24, column = 0)
-				places2.sort()
-				self.la2.grid(row = 25, column = 0)
-				self.combo1.config(values = places2)
-				self.combo1.grid(row = 25, column = 1)
-		elif(self.var2.get() == 0):
-			self.filename = None
-			self.plac_ind = None
-			self.combo1.grid_forget()
-			self.la1.grid_forget()
-			self.la2.grid_forget()
-
-class CSVSelector(object):
+class CSVSelector(FeatureWindow):
 	def __init__(self,parent):
-		self.parent = parent
-		self.filename = self.parent.nb.tab(self.parent.nb.select(), "text")
-		self.dataset = self.parent.file_handler.data[self.filename]
-		self.lon_var, self.lat_var = self.parent.file_handler.getLatLon(self.dataset)
-		self.window = tk.Toplevel(self.parent.root)
-		self.var2 = tk.IntVar(self.window) # shape file toggle
-		var_list = list(self.parent.file_handler.data[self.filename].data_vars.keys())
-		self.time_range = [str(pd.to_datetime(a).date()) for a in list(self.parent.file_handler.data[self.filename].variables['time'].values)]
-		self.b1 = tk.Button(self.window, text = 'Confirm')
-		self.b1.grid(row = 90, column = 1)
-		self.var3 = tk.StringVar(self.window) #shapefile location selector
-		self.var3.set("ALL")
-		self.filename = None
-		self.plac_ind = None
-		self.places = []
-		self.combo1 = ttk.Combobox(self.window, textvariable = self.var3)
-		self.la1 = tk.Label(self.window)
-		self.la2 = tk.Label(self.window, text= "Select place:")
+		super().__init__(parent)
 		self.var = tk.StringVar(self.window)
-		self.var.set(var_list[0])
+		self.var.set(self.list_var[0])
 		self.varSpin1 = tk.StringVar(self.window)
 		self.varSpin2 = tk.StringVar(self.window)
 		self.varBnd = tk.IntVar(self.window)
 		tk.Label(self.window, text = "Select variable: ").grid(row = 1, column = 0)
-		tk.OptionMenu(self.window, self.var, *var_list).grid(row = 1, column = 1)
+		tk.OptionMenu(self.window, self.var, *self.list_var).grid(row = 1, column = 1)
 		tk.Label(self.window, text = "Select time range: ").grid(row = 2, column = 0)
 		tk.Spinbox(self.window, values = self.time_range, textvariable = self.varSpin1).grid(row = 2, column = 1)
 		tk.Spinbox(self.window, values = self.time_range, textvariable = self.varSpin2).grid(row = 2, column = 2)
 		tk.Label(self.window, text = "Bounds?").grid(row = 3, column = 0)
-		tk.Radiobutton(self.window, text = "Use bounds specified in previous self.window", variable = self.varBnd, value = 0).grid(row = 3, column = 1)
+		tk.Radiobutton(self.window, text = "Use bounds specified in previous window", variable = self.varBnd, value = 0).grid(row = 3, column = 1)
 		tk.Radiobutton(self.window, text = "Apply no bounds", variable = self.varBnd, value = 1).grid(row = 3, column = 2)
-		tk.Checkbutton(self.window, text = "Use SHP file", variable = self.var2).grid(row = 4, column = 0)
-
-		self.b1.config(command = self.saveCSV)
-		self.var2.trace("w", self.shapeSelect)
+		tk.Checkbutton(self.window, text = "Use SHP file", variable = self.shapeFileToggle).grid(row = 4, column = 0)
+		self.b_confirm.config(command = self.saveCSV)
 	
-	def shapeSelect(self, event, b, c):
-		if (self.var2.get() == 1 or self.org == 2):
-			self.filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
-			if (self.filename == ""):
-				self.filename = None
-				self.var2.set(0)
-			else:
-				shp = gpd.read_file(self.filename)
-				#print(list(shp.columns))
-				# Searching in this above list and selecting the name variable seems like a good idea.
-				try:
-					self.places = list(shp['NAME'])
-				except:
-					self.places = list(shp['ST_NAME'])
-				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
-				#[Need to modify the selector to allow multiple places to be selected.]
-				places2 = [i for i in self.places if i is not None]
-				places2.append("ALL")
-				self.la1.config(text=self.filename.split('/')[-1])
-				self.la1.grid(row = 24, column = 0)
-				places2.sort()
-				self.la2.grid(row = 25, column = 0)
-				self.combo1.config(values = places2)
-				self.combo1.grid(row = 25, column = 1)
-		elif(self.var2.get() == 0):
-			self.filename = None
-			self.plac_ind = None
-			self.combo1.grid_forget()
-			self.la1.grid_forget()
-			self.la2.grid_forget()
-
 	def saveCSV(self):
 		var_name = self.var.get()
 		lon_var,lat_var = self.parent.file_handler.getLatLon(self.dataset)
@@ -758,24 +631,22 @@ class CSVSelector(object):
 			lat_range = lat_range[lat_range.index(msgs[lat_var][1]):lat_range.index(msgs[lat_var][0])+1]
 			lon_range = lon_range[lon_range.index(msgs[lon_var][0]):lon_range.index(msgs[lon_var][1])+1]
 			data_arr = self.parent.file_handler.getData(self.dataset,msgs,outVar,variable = var_name)[1]
-			if (self.filename is not None):
+			if (self.shp_file is not None):
 				lat_rn, lon_rn = self.dataset.coords[lat_var],self.dataset.coords[lon_var]
-				out = self.parent.file_handler.applyShape(data_arr, lat_var, lon_var, self.filename, self.plac_ind, lat_r = lat_rn, lon_r = lon_rn)[0]
+				out = self.parent.file_handler.applyShape(data_arr, lat_var, lon_var, self.shp_file, self.plac_ind, lat_r = lat_rn, lon_r = lon_rn)[0]
+				out = out.data
 			else:
 				out = data_arr
 		elif(self.varBnd.get() == 1):
-			if (self.filename is not None):
-				out = [np.array(self.parent.file_handler.getShapeData(self.dataset, var_name, time_t[0], self.filename, self.plac_ind)[0])]
+			if (self.shp_file is not None):
+				out = [np.array(self.parent.file_handler.getShapeData(self.dataset, var_name, time_t[0], self.shp_file, self.plac_ind)[0])]
 				for time_i in range(time_t[0], time_t[1]):
-					out.append(self.parent.file_handler.getShapeData(self.dataset,var_name, time_i+1, self.filename, self.plac_ind)[0])
+					out.append(self.parent.file_handler.getShapeData(self.dataset,var_name, time_i+1, self.shp_file, self.plac_ind)[0])
 				#This segment takes a long long time to execute. Please keep that in mind. Hence, testing is also not thorough.
 				out = np.array(out)
 			else:
 				out = self.dataset.data_vars[var_name][t3,:,:]
-		if(self.varBnd.get() == 0 and self.filename is not None):
-			resized_array = np.array(out.data)
-		else:
-			resized_array = np.array(out)
+		resized_array = np.array(out)
 		text = asksaveasfilename(filetypes=[("Comma-separated Values", "*.csv")]).split('.')
 		index = 0
 		lon_range.insert(0,'lat/lon')
@@ -788,71 +659,20 @@ class CSVSelector(object):
 			pd.DataFrame(temp_array).to_csv(name, header = lon_range, index = False, na_rep = "NaN")
 		tk.Label(self.window, text = "Done").grid(row = 43, column = 1, columnspan = 2)
 
-class ShapeData(object):
+class ShapeData(FeatureWindow):
 	def __init__(self,parent):
-		self.parent = parent
-		self.filename = self.parent.nb.tab(self.parent.nb.select(), "text")
-		self.dataset = self.parent.file_handler.data[self.filename]
-		self.lon_var, self.lat_var = self.parent.file_handler.getLatLon(self.dataset)
-		self.window = tk.Toplevel(self.parent.root)
-		self.var2 = tk.IntVar(self.window) # shape file toggle
-		var_list = list(self.parent.file_handler.data[self.filename].data_vars.keys())
-		self.time_range = [str(pd.to_datetime(a).date()) for a in list(self.parent.file_handler.data[self.filename].variables['time'].values)]
-		self.b1 = tk.Button(self.window, text = 'Confirm')
-		self.b1.grid(row = 90, column = 1)
-		self.var3 = tk.StringVar(self.window) #shapefile location selector
-		self.var3.set("ALL")
-		self.filename = None
-		self.plac_ind = None
-		self.places = []
-		self.combo1 = ttk.Combobox(self.window, textvariable = self.var3)
-		self.la1 = tk.Label(self.window)
-		self.la2 = tk.Label(self.window, text= "Select place:")
-		
-			#Retrieve Data, but limited by shape
+		super().__init__(parent)
+		self.shapeFileToggle.set(1)		
 		self.shapeSelect(None,None,None)
-		self.b1.config(command = self.printShapeData)
-
-		self.var2.trace("w", self.shapeSelect)
+		self.b_confirm.config(command = self.printShapeData)
 
 
 	def printShapeData(self):
-		masked_data = self.parent.file_handler.getShapeData(self.dataset,None, None, self.filename, self.plac_ind)[0]
+		masked_data = self.parent.file_handler.getShapeData(self.dataset,None, None, self.shp_file, self.plac_ind)[0]
 		msgs,outVar = self.parent.getIndexes()
 		sel_message, output_message = self.parent.file_handler.getData(self.dataset,msgs,outVar, masked_data = masked_data)
 		self.parent.printMessages(output_message,sel_message)
 		self.window.destroy()
-
-	def shapeSelect(self, event, b, c):
-		if (self.var2.get() == 1 or self.org == 2):
-			self.filename = askopenfilename(filetypes=[("SHAPEFILE", "*.shp")])
-			if (self.filename == ""):
-				self.filename = None
-				self.var2.set(0)
-			else:
-				shp = gpd.read_file(self.filename)
-				#print(list(shp.columns))
-				# Searching in this above list and selecting the name variable seems like a good idea.
-				try:
-					self.places = list(shp['NAME'])
-				except:
-					self.places = list(shp['ST_NAME'])
-				## THIS IS VERY VERY BAD, NEEDS TO BE GENERALIZED BETTER.
-				#[Need to modify the selector to allow multiple places to be selected.]
-				places2 = [i for i in self.places if i is not None]
-				places2.append("ALL")
-				self.la1.config(text=self.filename.split('/')[-1])
-				self.la1.grid(row = 24, column = 0)
-				places2.sort()
-				self.la2.grid(row = 25, column = 0)
-				self.combo1.config(values = places2)
-				self.combo1.grid(row = 25, column = 1)
-		elif(self.var2.get() == 0):
-			self.filename = None
-			self.plac_ind = None
-			self.combo1.grid_forget()
-			self.la1.grid_forget()
-			self.la2.grid_forget()
 
 class CDAPack(object):
 	file_handler = None
@@ -870,35 +690,21 @@ class CDAPack(object):
 
 	def main(self):
 		
-		# Creation of the main tkinter window and starting the tcl/tk interpreter and storing the object reference in the variable present in gl_vars.py.
 		self.root = tk.Tk()
-
-		# Sets the title for the window. Later can be replaced by the actual name of the software.
 		self.root.title('Climate Data Analysis Pack 0.0.4')
-
-		# This tkinter function creates a pop-up window through which the user can select multiple .nc files. filenames, contains the list of the names (with complete paths) stored in the form of strings, selected by the user.
-		# If no file is selected, the program terminates.
+		
 		filenames = askopenfilenames(filetypes=[("NetCDF Files", "*.nc")])
 		if (len(filenames) < 1):
 			self.root.destroy()
 			exit()
 
-		# Creates a file_handler object which allows us to use various file-related functionalities.
-		self.file_handler = FileHandler(filenames)
-		
+		self.file_handler = FileHandler(filenames)		
 
-		# This function prompts the user to select files which whose data is part of the same series, allowing queries whose timelines range across different files.
-		# Further, in the pop-up window, a button is created which, when pressed, will create the GUI.
-		gui_class = FirstGUI(self,self.file_handler.filenames)
+		gui_class = FirstGUI(self,self.file_handler.getFilenames())
 		gui_class.getMultiSets()
-		#self.getMultiSets(self.file_handler.filenames)
 
 		# This keeps the tkinter widgets active.
 		self.root.mainloop()
-
-		#Cleanup. Closing files before end of program.
-		for dataset in list(self.file_handler.data.values()):
-			dataset.close()
 
 	def createCoreGUI(self,filenames):
 		self.nb = ttk.Notebook(self.root)
@@ -917,6 +723,30 @@ class CDAPack(object):
 		pages = self.addPages(filenames)
 		self.fillPages(pages)
 		
+		tk.Label(self.root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
+		self.selBox = tk.Text(self.root, height = 4, width = 5)
+		self.selBox.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+		
+		tk.Label(self.root, text="Output:").grid(column = 5, row = 90, sticky = tk.W, padx = 5, pady = 5)
+		self.opBox = tk.Text(self.root, height = 4, width = 5)
+		self.opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
+		
+		tk.Button(self.root, text = 'Retrieve data', command = self.retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
+		tk.Button(self.root, text = 'Close', command = self.root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
+		
+		self.root.grid_columnconfigure(0, minsize=30)
+		self.root.grid_columnconfigure(1, minsize=150)
+		self.root.grid_columnconfigure(2, minsize=30)
+		self.root.grid_columnconfigure(3, minsize=150)
+		self.root.grid_columnconfigure(4, minsize=30)
+		self.root.grid_columnconfigure(5, minsize=150)
+		self.root.grid_columnconfigure(6, minsize=30)
+		self.root.grid_columnconfigure(7, minsize=30)
+		self.root.grid_columnconfigure(8, minsize=150)
+		self.root.grid_rowconfigure(91, minsize=20)
+		self.root.grid_rowconfigure(92, minsize=20)
+		self.root.grid_rowconfigure(93, minsize=20)
+
 		for filename in self.chk_var_list1.keys():
 			for dim in self.chk_var_list1[filename].keys():
 				self.chk_var_list1[filename][dim].trace("w",self.trig)
@@ -975,29 +805,6 @@ class CDAPack(object):
 				self.chk_var_list2[filename][data_var] = self.createCheckBox(pages[filename],data_var, row_num+1, col_num)
 				col_num += 1
 		
-		tk.Label(self.root, text="Selection:").grid(column = 1, row = 90, sticky = tk.W, padx = 5, pady = 5)
-		self.selBox = tk.Text(self.root, height = 4, width = 5)
-		self.selBox.grid(row = 90, column = 2, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
-		
-		tk.Label(self.root, text="Output:").grid(column = 5, row = 90, sticky = tk.W, padx = 5, pady = 5)
-		self.opBox = tk.Text(self.root, height = 4, width = 5)
-		self.opBox.grid(row = 90, column = 6, columnspan = 3, sticky = tk.W+tk.E+tk.N+tk.S, pady = 5, padx = 3, rowspan = 4)
-		
-		tk.Button(self.root, text = 'Retrieve data', command = self.retrieveData).grid(row = 100, column = 1, sticky = tk.E + tk.W, pady = 5)
-		tk.Button(self.root, text = 'Close', command = self.root.destroy).grid(row = 100, column = 8, sticky = tk.E+ tk.W, padx = 5, pady = 5)
-		
-		self.root.grid_columnconfigure(0, minsize=30)
-		self.root.grid_columnconfigure(1, minsize=150)
-		self.root.grid_columnconfigure(2, minsize=30)
-		self.root.grid_columnconfigure(3, minsize=150)
-		self.root.grid_columnconfigure(4, minsize=30)
-		self.root.grid_columnconfigure(5, minsize=150)
-		self.root.grid_columnconfigure(6, minsize=30)
-		self.root.grid_columnconfigure(7, minsize=30)
-		self.root.grid_columnconfigure(8, minsize=150)
-		self.root.grid_rowconfigure(91, minsize=20)
-		self.root.grid_rowconfigure(92, minsize=20)
-		self.root.grid_rowconfigure(93, minsize=20)
 
 	def createSelRow(self, page, dim_name, row_num, filename, space):
 		tk.Label(page, text = dim_name).grid(row = row_num, column = 0)
@@ -1041,22 +848,22 @@ class CDAPack(object):
 		self.opBox.insert(tk.INSERT, o_message)
 
 	def plotWindow(self):
-		plot = MapPlots(self)
+		MapPlots(self)
 
 	def exportToCSV(self):
-		csv = CSVSelector(self)
+		CSVSelector(self)
 
 	def retrieveData(self):
 		filename = self.nb.tab(self.nb.select(), "text")
 		if (self.chk_var_list3[filename].get() == 1):
-			shdata = ShapeData(self)
+			ShapeData(self)
 		else:
 			msgs,outVar = self.getIndexes()
 			sel_message, output_message = self.file_handler.getData(self.file_handler.data[filename],msgs,outVar)
 			self.printMessages(output_message,sel_message)
 
 	def dataSelector(self):
-		data_sel = DataSelector(self)
+		DataSelector(self)
 
 	def plotGenerator(self):
-		plot = PlotGenerator(self)
+		PlotGenerator(self)
